@@ -1,0 +1,716 @@
+COMBINATOR/CA 5 (4) (1985) 367--378
+
+SEQUENTIAL
+
+ACCESS
+
+IN SPLAY
+
+LINEAR
+
+TREES
+
+TAKES
+
+TIME
+
+R. E. TAR JAN
+Received 10 July 1984
+
+Sleator and Tarjan have invented a form of self-adjusting binary search tree called the splay
+tree. On any sufficiently long access sequence, splay trees are as efficient, to within a constant factor,
+as both dynamically balanced and static optimum search trees. Sleator and Tarjan have made a much
+stronger conjecture; namely, that on any sufficiently long access sequence and to within a constant
+factor, splay trees are as efficient as any form of dynamically updated search tree. This dynamic
+optimality conjecture implies as a special case that accessing the items in a splay tree in sequential
+order takes linear time, i.e. O(1) time per access. In this paper we prove this special case of the conjecture, generalizing an unpublished result of Wegman. Our sequential access theorem not only
+supports belief in the dynamic optimality conjecture but provides additional insight into the workings
+of splay trees. As a corollary of our result, we show that splay trees can be used to simulate outputrestricted deques (double-ended queues) in linear time. We pose several open problems related to our
+result.
+
+1. Introduction
+
+The objects of our study are bhmo' search trees. A binary search tree is a binary tree whose nodes contain distinct items selected from a totally ordered universe,
+such that the items are arranged in symmetric order: if x is any node, all items in the
+left subtree of x are less than the item in x and all items in the right subtree of x are
+greater. (See Figure 1.) We can access any item e in such a tree by searching down
+from the root, using the following recursive procedure: ]f e is in the root, stop;
+the item has been found. If e is less than the item in the root, search recursively in
+the left subtree of the root. If e is greater than the item in the root, search reeursively
+in the right subtree. If the tree is represented so that each node contains pointers to
+its left and right children, then the time to access an item is proportional to the depth
+of the node containing it. (In this paper we define the depth of a node x to be the
+number of nodes on the path from the tree root to x.)
+If a binary search tree is to support a sequence of accesses efficiently, then the
+depths of the accessed nodes must be small, at least when averaged over the sequence.
+Sleator and Tar jan [5, 6] proposed a way of guaranteeing this by changing the structure of the tree after every access. Their restructuring operation, called splaying,
+consists of a sequence of rotations. A single rotation takes O(1) time and preserves the
+symmetric order of the items. (See Figure 2.) To splay a tree at a node x we walk up
+the path from x to the tree root, performing rotations along the path. The rotations
+AMS subject classification (1980): 68 E 05, 68 C 25, 05 C 05, 68 E l0
+7*
+
+368
+
+R.E.
+
+TAR.IAN
+
+25
+
+Fig. I. ,4 bim~ry search ~ree
+
+RIc.ht rotatlOr~
+
+.~
+
+kell rolot~on
+A
+
+B
+
+B
+
+C
+
+Fix'. 2. Rotation o f the edge joininff itodes a
+(md y. The triangles denote sttbtrees. The
+tree showtt can be (I sttbtree oJ'a /ar~er tree
+
+are performed in pairs, in an order that depends upon the structure of the path. To be.
+precise, we splay at x by repeating the following step until x is the root of the tree :
+
+Splaying Step. Apply the appropriate one of the following cases. (See Figure 3.)
+Zig Case. If the parent p(x) of x is the tree root, rotate the edge joining x to p(x).
+(This makes x the root and terminates the splaying.)
+
+Zig-zig Case. l f p ( x ) is not the root and x and p(x) are both left children or both right
+children, rotate the edge joining p(x) to its parent and then rotate the edge joining _v
+to p(x).
+Zig-zag Case. l f p ( x ) is not the root and x is a left child and p(x) a right child or viceversa, rotate the edge joining x to its parent and then rotate the edge joining x to its
+new parent.
+In addition to moving the node x to the root of the tree, splaying roughly halves
+the depths of the other nodes on the splaying path, while increasing the depth o f any
+node in the tree by at most two. (See Figure 4.) A binary search tree in which we splay
+after every access at the node containing the accessed item is called a splay tree.
+It is easy to use splaying to implement such search tree update operations as
+insertion and deletion o f items and joining and splitting [5, 6]. F o r the moment we
+shall restrict our attention to a sequence of access operations. Since the set of items
+is fixed and in one-to-one correspondence with the tree nodes, we shall regard the
+nodes themselves as the items. We shall identify the nodes by their symmetric-order
+numbers, from 1 to n. As a measure of the time required by a sequence of m splayings,
+we shall use the sum of the depths of the nodes at which the splayings occur, i.e. the
+total number of nodes on splaying paths.
+
+SEQUENTIAL ACCESS IN SPLAY TREES
+
+369
+
+{a) Zig case
+A
+
+.(b) Zig-zig case.
+
+B
+
+C
+
+,Y
+
+(b)
+
+A
+
+,(c) Zig-zag case.
+
+B
+
+B
+
+C
+
+D
+
+C
+
+D
+
+(c)
+
+~9
+
+C
+
+A
+
+B
+
+Fig. 3. A splaying step during a splaying at x.
+Each case has a ,wmmetrk" variant
+(not s/town)
+
+E
+
+F
+
+Fig. 4. Splayin,~, at node a
+
+The main known complexity result for splaying is Sleator and Tarjan's access
+l e m m a . Suppose we assign arbitrary positive weights wl to the nodes i, 1 ~i_-<n. Let
+FV= ~ w; be the total weight of all the nodes. Consider a sequence of 171 splaying
+i=1
+
+operations starting with an arbitrary initial tree. Let s ( j ) be the node at which t h e j tt'
+splaying takes place.
+Io,.
+
+Access L e m m a [S, 6]. The total spla),ing ti,,,e is 0
+~.j=]
+
+_+ --lo~
+
+~ ~.Ws(jJ]
+
+. II
+
+i=1
+
+If we set all the weights equal to one, the access lemma gives a total time for m
+accesses o f O ( ( m + n ) log n), implying that splay trees are as efficient, on long enough
+access sequences and to within a constant factor, as any of the many forms of balanced trees. A m o n g other results, the access l e m m a also implies that on any sufficiently
+long access sequence and to within a constant factor, a splay tree is as efficient as an
+
+370
+
+R, E. TARJAN
+
+optimum static search tree for the sequence. Sleator and Taijan made an even stronger
+conjecture. Consider any sequence of accesses. Suppose we carry out the accesses by
+beginning with an arbitrary binary search tree and searching it from the root for the
+desired items in the desired order, with the proviso that between accesses we can
+change the tree by performing arbitrary rotations. The total cost of the access sequence is the total number of nodes on access paths plus the total number of rotations. Let
+T(s) be the minimum total cost of access sequence s for any such binary search tree
+algorithm. Note that the algorithm is allowed to choose the initial tree.
+Dynamic Optimality Conjecture. If s is any access sequence, then the cost o f performh~g
+s by ush~g splayh~g is 0 ( T ( s ) + n ) , for any hdtial tree.
+Remark. The additive term of n in the conjecture accounts for the fact that the optimum algorithm is allowed to choose its initial tree, whereas the splaying algorithm
+is given the worst possible initial tree. Any tree can be converted into any other in
+at most 2 n - 2 rotations [1]; thus allowing the optimal algorilhm to choose its initial
+tree saves it only O(n) time.
+If this conjecture is true, splay trees are a form of universally efficient search
+tree. In this paper we prove the following special case of the conjecture:
+Sequential Access Theorem. I f we access each o f the nodes o f an arbitrary hdtial tree
+once, in symmetric order, the total thne spent is 0 (n).
+To see that this theorem is a special case of the conjecture, observe that we
+can access n nodes in symmetric order in O(n) time by beginning with a tree consisting of only a right path*, accessing the root, and repeating the following pair of steps
+n - 1 times : rotate the edge joining the root to its right child ; access the root. (See
+Figure 5.)
+
+%%
+~-]°%
+
+n-1%
+
+°oo°'*
+
+S
+
+n_]oC~
+
+/
+
+F~e. 5. EflTcie#tt .~vquent&laccess
+* By the right path of a bina~ tree we mean the path from ti~e root through right children to
+lbe largesi node in the tree. We define the le/ipath symmetrically.
+
+SEQUENTIAL
+
+371
+
+ACCESS IN SPLAY TREES
+
+Our p r o o f of the sequential access theorem is contained in Section 2. The p r o o f
+is somewhat complicated and uses induction and averaging rather than the "potential" technique used by Sleator and Tarjan to prove the access lemma. As a corollary,
+we show in Section 3 that splay trees can be used to simulate output-restricted deques
+(double-ended queues) in linear time. This result confirms our belief that the splay
+tree, although it is a general-purpose data structure, is as efficient in special cases as
+customized special-purpose structures. In Section 4 we mention two open problems
+related to the sequential access theorem.
+2. Proof of the sequential access theorem
+
+Our goal is to analyze the time taken to successively splay at nodes 1, 2 . . . . , n
+in an arbitrary n-node tree. Let us restate the problem slightly. Figure 6 illustrates the
+effect of the i '~' splaying for i ~ 2 . Just before the splaying, the tree consists of the left
+path, containing the nodes 1, 2 . . . . . i - l, and the right subtree of i - 1, which contains i as its least node. Splaying at i restructures the right subtree, removing i and
+adding it to the left path.
+:-]
+
+k
+
+i
+oO
+
+°°
+
+°o
+
+~'¢,
+
+,6?
+
+A3
+
+x2
+
+.,°
+
+A~
+
+_.-" Xk-2~._)~A~_1 A~
+
+d ~
+
+~-~ -~
+A2
+
+A3
+
+Fig. 6. The effi,ct of the i" splaying. The splaying path contains nodes
+X 1 =
+
+i , ?¢~, . . . ,
+
+Xs¢
+
+In our analysis we shall ignore the left path entirely and only keep track of the
+right subtree. Figure 7 illustrates the resulting reinterpretation of splaying, which we
+call pseudo splaying, or p-splaying for short: the least node is removed and the rest of
+the left path is halved. There are two cases, depending on whether the number of nodes
+on the left path is odd or even. We use the number o f nodes on the left path as a measure of the p-splaying cost. The second and each successive p-splaying costs one less
+than the corresponding splaying. Thus the upper bound we shall derive on total
+p-splaying cost can be converted into a bound on total splaying cost by adding
+n-1.
+We need several observations that follow immediately from an inspection of
+Figure 7. Let x be any node. A node y is a right ancestor o f x if), is an ancestor o f x
+
+372
+
+R.E. TARJAN
+
+..'"
+
+,
+
+s. ,°
+Xk- 2
+
+..,~Ak_
+
+kever~/"
+
+I
+
+x2 •
+~
+x2Ai
+A2
+
+x2 x2
+
+Ak-2 Ak i
+A3
+Xk- I
+
+*
+xk 3,
+
+~
+
+Az
+
+kodd
+
+o°*°
+
+A,
+
+x2
+
+o"
+"
+
+A2
+
+.
+
+.
+
+Ak_3 Ak_2
+A3
+
+Fie. 7. The eft'eel of the i" p-splayi,,q. The p-.spl~ying path co,sists oJ ¢~octc,s
+-~:1 • ? ( 2 . . . .
+
+• -Vk
+
+and y ~ x. (Any node is an ancestor of itself; thus it is also a right ancestor of itself.)
+We denote the set of right ancestors o f x by A (x) and its cardinality by a(x). We define
+I(x) to be the number of nodes in A (x) on the left path.
+Lemma 1. The subtree rooted at .v is unaffected by successive p-splayings tmtil .v becomes
+a node on the left path. |
+Lemma 2. A s p-aplayings occur, A (x) decreases as a set, i.e. the relation y ( A (x), once
+false, remains false. The cost o f the p-splaying at x is at most a(x), where a(x) is compuled at any time before the p-splaying. |
+Lemma 3. Let a and a', I and l" denote the a and l functions just be/bre and./ust after the
+p-splaying o f some node 3,< x. Then a'(x) ~ a(x) - [l(x)/2l + 1 and l'(x) ~_ [l(x)/2]. |
+A p-splaying of cost k knocks at least [k/21- l nodes off the left path. If it
+were true that every node could return to the left path only a constant number of
+times, then it would be easy to derive the sequential access theorem. Unfortunately,
+individual nodes can return arbitrarly often to the left path. To overcome this difficulty, we shall show that on the average a node returns to the left path only a constant
+n umber of times. We average only over certain nodes in the tree.
+For any node x, let f ( x ) be the depth o f x when it first moves to the left path.
+( l f x starts on the left p a t h , f (x) is its initial depth.) For k an arbitrary positive integer,
+let the k shallowest nodes on the left path be x~, x_o. . . . . xk, fi'om lowest to highest in
+symmetric order, and let Yl for 1 < i ~ k be the ri~at child ofx~, if it exists. Let F(k)
+be the maximum possible wdue of ~ ' .f(Yi) for any tree that actually has nodes
+i=1
+
+.vt . . . . . . vk and j'~ . . . . . . l'~_~. ( l f y k is missing, we define f ( y k ) = 0 . )
+We shall prove by induction that F ( k ) = O ( k ) , i,e. the average depth of the
+nodes y~ when they first reach the left path is a constant independent of k. Instead of
+
+373
+
+SEQUENTIAL ACCESS I N SPLAY I'REES
+
+bounding F(k) directly, we shall bound G ( k ) = m a x {F(i)II <=i~_k}, which is nondecreasing in k. The crucial result, stated in the next lemma, is a recursive bound on
+
+G(k).
+Lemma 4. For k~3,
+
+G(k)<=5 G([k/2l+l)+5([k/2]+l).
+
+Proof. Let k ->_3. Consider the first p-splaying. Its most important effect is to pair up
+all but at most two of the nodes y~; for roughly half the values of i in the range 1 ~ i =<_
+<-k, node x~ leaves the left path, getting 3,~_~as its new left child and retaining y~
+as its right child. Consider the effect of later p-splayings on the triple Yi-~, x~, Yi.
+Eventually x~ moves to the left path. When it does, Y;-a and Yi are still its left and
+right children by Lemma 1. Furthermore y~_~ moves to the left path simultaneously
+with x~. Thus fO'i-~) =f(xi) + 1.
+
+~rk-2
+
+x2 ~ 3 , ~ z
+
+"~]~,
+
+N Y~N A~
+
+~i
+
+Y~
+
+Ak. ., A~..~
+
+Fig. 8. The e/]'ect o f p-splayhlg on the nodes x~ and y~.
+There are actually six cases, dependit(~ on whether k is
+even or odd and on whether the length o f the p-splaying
+path is' k, greater than k and even, or greater than k attd
+odd. The case shown is k even with a p-splaying path o f
+let~gth greater than k and evem Sabtree Ao is transformed
+into region A'o by the p-xplayit(~,
+
+When x i reaches the left path, a(y~)=.f(xl) and l(yi)=f(x~)-l, At least
+two more p-splayings (of y~_l and :q ) occur before ),'~moves to the left path. The first
+two of these reduce a(y~) to at most f(x,) - [ ( f ( x ~ ) - - 1 ) / 2 ] +1 - [ ( f ( x ~ ) - 1)/2J/2] +
++ 1 ~f(x~)/4 + 3 by Lemma 3 (applied twice). By Lemma 2, f(Yi) ~ f ( : q ) / 4 +3.
+Combining our bounds we have .f(y,_ ~) ~f(Yl) ~-~f(x~) +4.
+
+Thus we can
+
+estimate the cost of the paired y~'s using the cost of the y~'s knocked off the left path by
+the first p-splaying, which we can in turn estimate using G.
+The two nodes y~ that may not be paired up by the first p-splaying arey~ a n d y k.
+This p-splaying reduces a(yx) to at most [k/21 + 1 by Lemma 3, implying that f(Yl) ~<_-[k/2] + I. Node Yt~,if not paired up, remains a right child of xk, which remains the
+root,
+Let z~, z o, ..., z.i be the nodes among x~, x2 . . . . . xk and )'k that are right
+children of nodes on the left path after the first p-splaying. We have .i~[k[2] +1.
+
+374
+
+R. E. TARJAN
+
+The discussion above implies
+k
+
+j
+
+~'J(Yk) --~ lk/2j+ l +5 ~'.l(z,)+4j
+<= ~-5 O ([k/21 + I) + 5 ([k/2l + I),
+•
+i=a
+
+I=l
+
+which gives us the recurrence
+5
+G(k) ~ ~l G([k/2l+ l ) + 5 ( l k / 2 l + l ) ,
+since the initial tree was arbitrary.
+
+II
+
+L e m m a 5. G (k) :< 8k.
+k
+
+i=k(k+l)/2.
+
+Proof. We use induction on k. Obviously G ( k ) ~ '
+
+An easy calcu-
+
+i=1
+
+lation shows G ( k ) ~ 8 k for k ~ 3 0 . Let k > 3 0 and suppose G ( i ) ~ 8 i for l<=i<k.
+L e m m a 4 and the induction hypothesis imply G(k) ~ 10([k/21 + 1) + 5 ([/(/21 + 1)~ 8k.
+By induction G ( k ) ~ 8 k f o r a l l k . II
+R e m a r k . A more complicated analysis will reduce the constant in Lemma 5, but this
+constant affects the constant we derive for the sequential access theorem only logarithmically.
+
+Our proof of the sequential access theorem, though not as simple as possible,
+is designed to yield a small constant factor. We consider p-splaying at each of the
+nodes of an arbitrary n-node tree in symmetric order. Partition the nodes into bands
+by assigning node x to band 0 if l ~ a ( x ) ~ 2 and to band i f o r i ~ l if 2 ; - 1 + 2 ~
+~ a ( x ) ~ 2 ~ + l . The bands are chosen so that if a band i node with i > l is on a
+splaying path, its band after the splaying is at most i - 1. This follows from Lemma 3 ;
+any band zero node remains in band zero. We call a node deep if its band is five or
+greater and shallow otherwise.
+We shall charge for certain events that occur during the p-splaying process.
+Specifically, we charge two units each time a p-splaying occurs, one unit each time the
+band of a shallow node changes, and 3.8 units each time a deep node becomes
+shallow. The total charge is 2n tor the p-splayings plus 4n :for the shallow band
+transitions plus 3.8n for the deep-shallow transitions, for a grand total of 9.8n.
+L e m m a 6. The total charge is an upper bound on the cost o/all the p-~pko,ings.
+
+ProoL Consider a p-splaying path containing k ~- 33 nodes. The two units charged to
+the p-splaying pay for the at most two band zero nodes. Each node in bands one
+through four changes band because of the p-splaying and is charged one unit. Each
+node in band five changes from deep to shallow and is charged 3.8 units. Since every
+node on the path is in bands zero through five, the cost of the p-splaying is no greater
+than the charge for events that occur during the p-splaying.
+Consider a p-splaying path containing k > 3 3 nodes. Consider the situation
+just after the p-splaying. Let xa, x.,, ..., xj be those nodes that were knocked off the
+left path by the splaying. We have a(xi)<=[k/21 + 1, which implies by Lemma 5 that
+
+S E Q U E N T I A L ACCESS IN SPLAY T R E E S
+
+375
+
+J
+
+.~ G(x~) ~4k +8. Suppose there are I nodes :v~ that eventually return to the left path
+i=1
+
+as deep nodes, i.e. have .[(x~):~ 18. Then 1 8 l ~ 4 k + 8 , which implies / ~ - 2 k + 4 "
+There are k - 3 3 nodes on the p-splaying path in bands six and higher, of
+which at least ( k - 3 3 ) / 2 - 1 : k / 2 - 3 5 / 2
+are among the nodes x~. Thus at least
+
+k / 2 - 35/2 l > l~k
+
+18 nodes in bands six and higher return to the left path only as
+
+shallow nodes. The charge for the corresponding deep-to-shallow transitions is at least
+f
+
+~
+
+1
+
+3 81@k-181=>k-64.4. There isan additional charge of 3.8(16)=60.8 for the 16
+band five nodes that become shallow because of the p-splaying, plus 15 for the 15
+nodes in bands one through four that change band because of the p-splaying,
+plus 2 for the p-splaying itself. The total charge associated with the p-splaying is
+thus at least k - 6 4 . 4 + 6 0 . 8 + 1 5 + 2 = k + 1 3 . 4 ~ k .
+I
+Theorem 1. The total cost o/all n p-splaying operations is at mos't 9.8n.
+
+Proof. Immediate flora Lemma 6.
+
+II
+
+As noted at the beginning of this section, the bound in Theorem 1 underestimates the cost of n sequential splayings in an n-node tree by n - I. Thus we obtain
+a bound for the sequential access theorem of 10.8n.
+
+3. Splay trees as deques
+
+A deque (double-ended queue) is an abstract data structure consisting of a list
+of items, on which the following operations can be performed"
+push (e) : Add item e to the front of the deque.
+pop. Remove the flont item from the deque and return it. If the deque is empty, this
+operation returns a special null node.
+in/ect (e): Add item e to the rear of the deque.
+e/ect: Remove the rear item from the deque and return it. If the deque is empty, this
+operation returns null.
+If only push and pop operations are performed, the deque is a stack. If only
+inject and pop operations are performed, the deque is a queue. If only push, pop. and
+inject operations are performed, the deqne is output-restricted.
+We can implement a deque using a splay tree whose nodes are the deque items,
+with symmetric order in the tree corresponding to front-to-rear order in the deque.
+To carTy out push(e), we make the current tree the right subtree of item e, which
+becomes the new root. To carry outpop, we follow left child pointers from the tree root
+until reaching a node x with no left child, perform a p-splaying at node x (thereby
+removing it from the tree), and return x. The implementations of h~./ect and eject are
+symmetric.
+
+376
+
+R. E" TARJAN
+
+We wish to study the efficiency of this implementation of deques. The sequetial access theorem suggests that the time per deque operation should be O(1) when
+anaortized over a sufficiently long sequence of operations. Thus we make the following conjecture"
+Deque Conjecture. I f we perjbrm a sequence o/" m deque operations on an arbitrary
+n-node tree, the total thne is O(n-Fln).
+We shall prove this conjecture for output-restricted deques, i.e. no eiect operations are allowed. We need two preliminary lemmas. Consider an n-node tree in
+which the first k nodes in symmetric order are colored white and the last n - k nodes
+are colored black. We shall study the cost of p-splaying at each of the white nodes in
+symmetric order. To bound the cost, we count white nodes and black nodes on
+p-splaying paths separately.
+Lemma 7. Suppose the p-splaying path .for node I contahzs k black nodes. After the
+p-splaying, at least t(k - 1)/2J o f these black nodes are right ancestors o/'no white nodes.
+Proof. Let x~ . . . . . .vk be the black nodes on the p-splaying path, in increasing symmetric order. These are the k shallowest nodes on the left path. Let x~ for i->2 be
+knocked off the left path by the p-splaying. The new left subtree of x~ is the old right
+subtree of x;_~ which can contain no white nodes since all white nodes are tess than
+x~_~. Thus x~ satisfies the requirements of the lemma. There are at least [ ( k - I ) / 2 l
+such nodes. II
+Lemma 7 gives us a way to count black nodes on splaying paths. For purposes
+of counting white nodes, black nodes are irrelevant, as the next lemma shows. Let
+T be the original tree, and let W(T), the white tree of T, be the tree formed from T
+consisting of the k white nodes, with y the parent o f x in W ( T ) if), is the nearest white
+ancestor of x in T. (If the parent of x in T is white, y is that parent; otherwise y is found
+by walking up from x until reaching a node less than x in symmetric order. In the latter case node x is the shallowest white node on the left path of the right subtree ofy.)
+W ( T ) is indeed a tree, because the nearest common ancestor of any two white nodes
+is white. The parenthetical remark implies that W ( T ) is binary.
+Lemma 8. Let T" be formed fi'om T by doing a single right rotation anywhere in the tree.
+/./'at least one o f the nodes involved in the rotation is black, then W ( T') = W ( T). Otherwise, let W(T)" be formed from W ( T ) by performhTg the same rotation as h~ T. Then
+W(T') = W ( T)'.
+Proof. Referring to Figure 2, we see that the possible colors of nodes x and y are
+black-black, white-black, or white-white. (Since x<);, the black-white case is impossible). In the black-black case, the rotation in T doesn't affect the white tree: any white
+node in subtrees A, B, or Cwlmse nearest white ancestor in T is an ancestor of y retains the same nearest white ancestor in T'. The same is true in the white-black case:
+all of subtree C must be black; any white node in A or B whose nearest white ancestor
+in Tis x has x as its nearest white ancestor in T ' ; the removal of), as an ancestor of x
+doesn't affect the nearest white ancestor o f x. In the white-white case, all of subtrees
+A and B are white; the right child o f y in W ( T ) is the shallowest white node on the
+left path of C. It is immediate that W ( T ' ) = W ( T ) ' . II
+
+SEQUENTIAL ACCESS IN SPLAY TREES
+
+377
+
+Corollary 1. Let 7"" be formed from T byp-splaying at node 1 and let W(T)" be formed
+from W ( T) similarly. Then the number of white nodes on the p-splayhTg paths is the same
+hz both T and W ( T), and W ( T')--- W ( T)'. |
+Now consider an n-node arbitrary initial tree. Suppose we perform a sequence
+of m push, pop, and h~ject operations, with the proviso that none of the newly injected
+nodes is popped.
+
+Lemma 9. The deque operations take a total o f O(n +m) time.
+Proof. Color white all the original nodes in the tree as well as all pushed nodes, and
+color all injected nodes black. All the black nodes follow all the white nodes in symmetric order. Eachpush or inject operation takes O(1) time. Thus we need only bound
+the total time ofthepop operations, i.e. the total number of nodes on p-splaying paths.
+When a new node x is pushed, its set of right ancestors is {x}, and it becomes a right
+ancestor of no other nodes. It follows from Corollary 1 that all the results of Section
+2 hold for the white tree as it changes because of deque operations. The number of
+white nodes on the p-splaying paths of nodes in the original tree is at most 9.8n.
+(When a push occurs, what is left o f the original tree is unaffected until the pushed
+node is removed by a pop.) If a pop causes a p-splaying along a path containing
+k black nodes, then by Lemma 7 at least [ ( k - 1 ) / 2 1 ~ k / 2 - 1 of these black nodes
+are on no later splaying path. It follows that the number of black nodes on p-splaying
+paths is at most two per black node plus two per p-splaying, tbr a total of at most
+2(n+m). Combining estimates, we find that the total number of nodes on all psplaying paths is at most l l . S n + 3 m . The theorem follows. I
+Theorem 2. Consider a sequence of m output-restricted deque operations performed on an
+
+arbitrary n-node tree. The deque operations require a total o f 0 (n +m) time.
+Proof. We divide the deque operations into epochs such that the restriction of Lemma
+9 holds for each epoch. The first epoch ends when the last node in the original tree
+is popped. The i + 1"~t epoch ends when the last node in the original tree o f epoch i is
+popped. Nodes that are white during one epoch are gone during the next epoch, and
+nodes that are black during one epoch are white during the next epoch. The theorem
+follows from Lemma 9 by summing over epochs. 1
+4. Remarks and open problems
+Theorems 1 and 2 strengthen our belief that the splay tree, even though it is
+a general-purpose data structure, adapts sufficiently well to the usage pattern that it
+can be competitive with special-purpose structures customized to fit their usage. There
+are several open problems related to our work. The first is to prove the deque conjecture. If true, this conjecture implies that implementing a deque using a splay tree is
+as efficient, in an amortized sense and ignoring constant factors, as the standard array and doubly-linked list representations [3, 7]. In situations where insertions and
+deletions in the interior o f the deque are occasionally necessary, as in discrete event
+simulation [2, 4], the splay tree representation may be a good one, since it supports
+more powerful operations apparently without degrading the efficiency o f simple
+ones.
+
+378
+
+R. E. T A R J A N :
+
+SEQUENTIAL
+
+ACCESS IN SPLAY TREES
+
+Proving the deque conjecture requires studying the effect of intermixed splayings on both ends of the tree. As an aid to this study, it would be nice to understand
+the sequential access theorem better. In particular, it would be useful to have a potential-based proof. (See [8] for a discussion of the idea of potential.) Such a proof might
+be more easily extendible to a proof of the deque conjecture than the present one
+seems to be.
+Another related question was suggested by Danny Sleator (private communication.) Call the pair of rotations perfonned during the zig-zig case of a splaying step
+a t u r n . (See Figure 9.)
+
+ke'rl
+
+A
+
+1urn
+c
+
+O
+
+D
+
+F&. 9. A tttrn. The tree shown can be a st¢btree
+of a larger tree
+
+Turn Conjecture (Sleator). I f we beght with an arbitrao, n-node tree and perform an
+arbitrary sequence o f hTtermixed right turns and right shlgle rotations, then the total
+number o f turns is O(n).
+
+("))
+
+(
+
+The mm~ber o f single rotations can be as high as 2 "
+
+Acknowledgement. My thanks to Adriano Garsia, Neff Sarnak, Danny Sleator,
+and Michelle Wachs for extensive discussions lhat stimulated my thinking and helped
+to clarify the ideas presented here. My special appreciation to Mark Wegman, whose
+proof of the sequential access theorem for the special case of a complete binary tree
+was the spur for my efforts.
+References
+[1] K. CUL1K II and D. WOOD, A note on some tree similarity measures, lnfo. Proc. Lett. 15 (1982),
+39--42.
+12] G. GORDON, System Simulatiott, Prentice-Hall, Englewood Cliffs. NJ. 1969.
+[3] D. E. KNUTr~, The Art o f Compttter Programming Vohmw 1: Fundamental Algorithms, Second
+Edition, Addison-Wesley, Reading, MA, 1973.
+[4] T. H. NAYLOP,, J. L. BALINTY, D. S. BURDICK, and K. CHU, Computer Simulation Techniques,
+Wiley, New York, NY, 1966.
+[5] D. D. SLEA'rOR and R. E. TAaJtu'~, Self-adjusting binary trees, Proc. Fifteenth Ammal A C M
+Syrup. on Theory oJ Computhtg (1983), 235--245.
+[6] D. D. SLEATOR and R. E. TARJAN, Self-adjusting binary search trees, J. Assoc. Comput. Math.,
+32 (1885), 652---686.
+[7] R. E. TARJAN, Data Structures attd Network Algorithms, CMBS 44, Society for Industrial and
+Applied Mathematics, Philadelphia, PA, 1983.
+[8] R. E. TAPd~d~, Amortized computational complexity, SIA31 J. Alg. Disc. ~Ieth., to 6 (1985),
+545--568.
+
+Robert Endre Tarjan
+A T & T Bell Laboratories
+600 Mountain Avenue
+Murray Hill, New Jersey 07974
+U.S.A.
+
+
