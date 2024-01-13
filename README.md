@@ -1,5 +1,6 @@
 # Scala-course-autumn-2023
 Homeworks from Tinkoff Scala course
+* [Evaluation criteria](criteria) - *cloned from Tinkoff gitlab*
 * [HW1](HW1)
 * [HW2](HW2)
 * [HW3](HW3)
