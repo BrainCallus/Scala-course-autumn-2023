@@ -1,0 +1,3 @@
+[submodule "expenses-tracker"]
+	path = expenses-tracker
+	url = https://github.com/BrainCallus/Expenses-tracker
