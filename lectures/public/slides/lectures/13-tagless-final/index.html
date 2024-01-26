@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    
+    <title>Лекция 13 - Tagless Final</title>
+  <script type="module" crossorigin src="/lectures/assets/main.68923260.js"></script>
+  <link rel="stylesheet" href="/lectures/assets/main.3bd49d33.css">
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <!--Intro-->
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Tagless Final
+
+                    Лекция 13
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Проблема построения приложений
+
+                    ---
+
+                    Наша бизнес логика инкапсулирует бизнес _домен_
+
+                    ---
+
+                    Нам свойственно разработать свой собственный специфичный язык для того, чтобы
+                    описать наш _домен_
+
+                    ---
+
+                    В рамках этого языка мы определяем:
+
+                    - Структуры данных для нашего домена
+                    - Операции над этими структурами данных, в которых содержится наша бизнес логика
+
+                    ---
+
+                    Другими словами, мы разрабатываем специализированные язык под наш домен - DSL
+                    (Domain-Specific Language)
+
+                    ---
+
+                    DSL, который определяется в другом языке программирования очень часто называют
+                    _встроенными_ (_embedded_) или eDSL
+
+                    Они _встроены_ в родительский язык. В нашем случае родительский язык - Scala
+
+                    ---
+
+                    Scala имеет два наиболее распространенных подхода к дизайну eDSL'ей:
+
+                    - Начальная кодировка (Initial Encoding)
+                    - Конечная кодировка (Tagless Final Encoding)
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Начальная кодировка
+                    (Initial Encoding)
+
+                    ---
+
+                    Давайте определим язык для простых математических выражений, которые поддерживают:
+                    - сложение
+                    - константные значения
+                    - отрицание
+
+                    ---
+
+                    Мы можем выразить эти операции, как алгебраический тип данных (ADT). Каждый тип суммы
+                    будет представлять из себя операцию:
+
+                    ```scala [1-15]
+                    sealed trait Maths
+                    object Maths {
+                      case class Add(left: Maths, right: Maths) extends Maths
+                      case class Const(v: Int) extends Maths
+                      case class Neg(v: Maths) extends Maths
+                    }
+                    ```
+
+                    ---
+
+                    Теперь с помощью этого языка мы можем определять простые математические выражения:
+
+                    ```scala [1-15]
+                    import Maths._
+
+                    val maths: Maths =
+                      Add(
+                        Add(Const(1), Const(2)),
+                        Neg(Const(3))
+                      )
+                    ```
+
+                    ---
+
+                    Ок, все хорошо, но теперь нам нужно как-то уметь вычислять итоговое значение
+                    нашего выражения. Для этого нам потребуется _интерпретатор_ для нашего языка:
+
+                    ```scala [1-15]
+                    def compute(maths: Maths): Int =
+                      maths match {
+                        case Add(l, r) => compute(l) + compute(r)
+                        case Neg(v)    => - compute(v)
+                        case Const(v)  => v
+                      }
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    compute(maths)
+                    // 0
+                    ```
+
+                    ---
+
+                    Выражение `maths`, которое мы определили, может быть интерпретировано и по-другому.
+
+                    Например, мы можем захотеть получать его текстовое представление.
+
+                    Для этого мы можем объявить другой _интерпретатор_:
+
+                    ---
+
+                    ```scala [1-15]
+                    def pretty(maths: Maths): String =
+                      maths match {
+                        case Add(l, r) => pretty(l) + "+" + pretty(r)
+                        case Neg(v)    => " - (" + pretty(v) + ")"
+                        case Const(v)  => v.toString
+                      }
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    pretty(maths)
+                    // 1 + 2 - (3)
+                    ```
+
+                    ---
+
+                    Прошло время, и теперь нам требуется добавить новую операцию в наш язык -
+                    умножение:
+
+                    ```scala [1-15]
+                    object Maths {
+                      ...
+                      case class Mult(l: Maths, r: Maths) extends Maths
+                    }
+                    ```
+
+                    ---
+
+                    К сожалению, такой подход делает уже нами написанные интерпретаторы невалидными.
+
+                    Иначе говоря, добавление новой операции приводит к тому, что нам нужно изменять
+                    все наши написанные интерпретаторы:
+
+                    ---
+
+                    ```scala [1-15]
+                    def compute(maths: Maths): String = {
+                      ...
+                      case Mult(l, r) => compute(l) * compute(r)
+                    }
+
+                    def pretty(maths: Maths): String = {
+                      ...
+                      case Mult(l, r) => pretty(l) + " * " + pretty(r)
+                    }
+                    ```
+
+                    ---
+
+                    Вы можете подумать, что это хорошо. Компилятор будет предупреждать нас о всех местах,
+                    где добавилась новая операция.
+
+                    Но теперь представим, что не все выражения начинают использовать новую операцию, но при
+                    этом нам приходится изменить все интерпретаторы, которых может быть очень много в проекте.
+
+                    На большой кодовой базе такой подход плохо масштабируется, любое изменение проводит
+                    к большому изменению существующего кода
+
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Конечная кодировка
+
+                    (Tagless Final Encoding)
+
+                    ---
+
+                    Теперь давайте перепишем наш `Maths` в конечной кодировке, используя `F[_]`
+                    и методы вместо отдельных сумм типов:
+
+                    ```scala [1-15]
+                    trait Maths[F[_]] {
+                      def const(a: Int): F[Int]
+                      def add(fa: F[Int], fb: F[Int]): F[Int]
+                      def neg(fa: F[Int]): F[Int]
+                    }
+
+                    object Maths {
+                      // Apply summoner для лаконичности
+                      def apply[F[_]](implicit maths: Maths[F]): Maths[F] = maths
+                    }
+                    ```
+
+                    ---
+
+                    Новое аналогичное выражение будет выглядеть так:
+
+                    ```scala [1-15]
+                    def expr[F[_] : Maths]: F[Int] =
+                      Maths[F].add(Maths[F].const(1), Maths[F].const(2))
+                    ```
+
+                    ---
+
+                    Теперь давайте добавим интерпретатор для `Maths`, который будет вычислять значение
+                    выражения:
+
+                    ```scala [1-15]
+                    type Id[A] = A
+
+                    implicit val compute: Maths[Id] = new Maths[Id] {
+                      def const(a: Int): Int = a
+                      def add(fa: Int, fb: Int): Int = fa + fb
+                      def neg(fa: Int): Int = -fa
+                    }
+
+                    expr[Id] // 3
+                    ```
+
+                    ---
+
+                    И второй интерпретатор для текстового представления:
+
+                    ```scala [1-15]
+                    type StringT[A] = String
+
+                    implicit val pretty: Maths[StringT] = new Maths[StringT] {
+                      def const(a: Int): String = a.toString
+                      def add(fa: String, fb: String): String = fa + " + " + fb
+                      def neg(fa: String): Int = " -(" + fa + ")"
+                    }
+
+                    expr[StringT] // 1 + 2
+                    ```
+
+                    ---
+
+                    Теперь давайте посмотрим, что будет происходить при добавлении операции
+                    умножения:
+
+                    ```scala [1-15]
+                    trait MathsMult[F[_] {
+                      def mult(a: F[Int], b: F[Int]): F[Int]
+                    }
+
+                    object MathsMult {
+                      // Apply summoner для лаконичности
+                      def apply[F[_]](implicit
+                        maths: MathsMult[F]
+                      ): MathsMult[F] = maths
+                    }
+                    ```
+
+                    ---
+
+                    Мы можем сделать отдельные интерпретаторы __только__ для новой операции:
+
+                    ```scala [1-15]
+                    implicit val pretty: MathsMult[StringT] =
+                      new MathsMult[StringT] {
+                        def mult(fa: String, fb: String): String =
+                          "(" + fa + ") * (" + fb + ")"
+                        }
+
+                    implicit val compute: MathsMult[Id] =
+                      new MathsMult[Id] {
+                        def mult(fa: Int, fb: Int): Int = fa * fb
+                      }
+                    ```
+
+                    ---
+
+                    Теперь, мы можем использовать синтаксис `context bound` для добавления
+                    в наше выражение новой операции:
+
+                    ```scala [1-15]
+                    def expr2[F[_]: Maths: MathsMult]: F[Int] =
+                      MathsMult[F].mult(
+                        Maths[F].add(Maths[F].const(1), Maths[F].const(2)),
+                        Maths[F].const(3)
+                      )
+
+                    expr2[Id] // 9
+                    expr2[StringT] // (1 + 2) * (3)
+                    ```
+
+                    ---
+
+                    Таким образом мы смогли добавить новую операцию и интерпретаторы к ней, не меняя
+                    исходные интерпретаторы.
+
+                    Тут видно, что такие интерпретаторы для конечной кодировки хорошо композируются
+                    ---
+
+                    ### Модули
+
+                    `Maths` и `MathsMult` - это __модули__ конечной кодировки,
+                    которые определяют операции над нашими данными.
+
+                    Модули также еше принято называть __алгебрами__
+
+                    ---
+
+                    Модули != Тайпклассы
+
+                    Потому что в общем случае мы можем объявить несколько валидных реализаций
+                    наших модулей (несколько валидных интерпретаторов) для одного и того же `F[_]`
+
+                    Тайпклассы в свою очередь ограничивают нас использовать только одну валдиную реализацию
+                    для `F[_]` по свойству когерентности.
+
+                    ---
+
+                    Но, мы можем считать каждый тайпкласс, как модуль конечной кодировки
+
+                    ---
+
+                    ### Слоенная Архитектура
+
+                    Самая распространенная архитектура приложений - это _слоенная архитектура_
+
+                    ---
+
+                    Основная идея:
+
+                    - Мы объявляем базовые операции поверх каждой интеграции (HTTP, БД и тд) в нашем приложении
+                    - Мы объявляем на основе базовых операций наш _бизнес домен_
+                    - Мы выставляем наши сложные операции в виде контроллеров к нашему серверу/сервису
+
+                    ---
+
+                    Для примера,
+
+                    1. Мы можем объявить базовые операции для работы с пользователями и их счетами:
+                       - `UserRepository`
+                       - `AccountRepository`
+                    2. Мы можем реализовать наш _бизнес домен_ через операции репозиториев:
+                       - `FraudDetection`
+                    3. Мы можем выставить наш _бизнес домен_ в виде контроллера:
+                       - `FraudController`
+
+                    ---
+
+                    Таким образом мы достигаем разделение нашего бизнес домена от конкретных реализаций:
+
+                    1. Мы можем спокойно изменять логику `FraudDetection`
+                       - Например, реализовать новую стратегию детектирования мошенничества
+                    2. Мы можем спокойно изменить реализацию наших репозиториев
+                       - Например, мигрировать с Oracle на Postgres
+
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Подброный пример
+
+
+                    ---
+
+                    Бизнес Контекст:
+
+                    - У нас есть данные о пользователях
+                    - Каждый пользователь имеет свойство, которое определяет разные уровни обслуживания,
+                    которые мы предоставляем пользователю
+                    - Каждый пользователь имеет свой счет для бонусов
+                    - Мы можем пополнять этот счет для каждого пользователя
+
+                    ---
+
+                    Бизнес Задача:
+
+                    Требуется реализовать новую программу лояльности, которая будет распределять бонусы
+                    для пользователей с высоким уровнем обслуживания
+
+                    ---
+
+                    Данные:
+
+                    ```scala [1-15]
+                    @newtype case class UserId(v: String)
+                    @newtype case class Amount(v: BigDecimal)
+                    // Уровень обслуживания
+                    sealed trait ServiceLevel
+                    object ServiceLevel {
+                      case object High extends ServiceLevel
+                      case object Low  extends ServiceLevel
+                    }
+                    case class User(
+                      userId: UserId,
+                      level: ServiceLevel,
+                      name: String
+                    )
+                    ```
+
+                    ---
+
+                    Базовые операции:
+
+                    ```scala [1-15]
+                    trait UserRepository[F[_]] {
+                      def selectWithLevel(level: ServiceLevel): F[Vector[User]]
+                    }
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    trait BonusAccountRepository[F[_]] {
+                      def deposit(userId: UserId, amount: Amount): F[Unit]
+                    }
+                    ```
+
+                    ---
+
+                    Наша бизнес логика:
+
+                    ```scala [1-15]
+                    trait BonusDistribution[F[_]] {
+                      def depositForHigh(amount: Amount): F[Unit]
+                    }
+
+                    ```
+
+                    ---
+
+                    Давайте ее реализуем:
+
+                    ```scala [1-15]
+                    import cats.Monad
+                    import cats.syntax.flatMap._  // синтаксис для FlatMap
+                    import cats.syntax.functor._  // синтаксис для Functor
+                    import cats.syntax.traverse._  // синтаксис для Traverse
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    final class BonusDistributionImpl[F[_]: Monad](
+                      users: UserRepository[F],
+                      bonus: BonusAccountRepository[F]
+                    ) extends BonusDistribution[F] {
+                      def depositForHigh(amount: Amount): F[Unit] =
+                        for {
+                          users <- users.selectWithLevel(ServiceLevel.High)
+                          userIds = users.map(_.userId)
+                          _ <- userIds.traverse { userId =>
+                            bonus.deposit(userId, amount)
+                          }
+                      } yield ()
+                    }
+                    ```
+
+                    ---
+
+                    Если присмотреться к реализации `BonusDistributionImpl`, то в ней доступны только следующие
+                    операции для `F[_]`:
+
+                    - `Monad` - `flatMap`, `pure`
+                    - `UserRepository` - `selectWithLevel`
+                    - `BonusAccountRepository` - `deposit`
+
+                    ---
+
+                    Мы можем с уверенностью говорить, что эта часть кода не производит никакие сайд-эффекты:
+
+                    - F не может завершиться с ошибкой в этой композиции
+                    - F не может писать логи
+                    - и тд.
+
+                    ---
+
+                    Такой подход ограничивает нас использовать только максимально специфичные операции для реализации
+                    нашего модуля
+
+                    У такого подхода есть ряд преимуществ:
+
+                    - `Local Reasoning` такого кода
+                    - Очень точные зависимости нашего модуля, мы можем точно выразить, что нам нужно
+                    - Легко тестировать, можем замокать только то, на что мы зависим
+                    - Легко рефакторить, может добавлять новые операции или удалять старые
+
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Легкий Рефакторинг
+
+                    ---
+
+                    Теперь давайте предположим, что мы достигли определенного большого лимита пользователей,
+                    и теперь наша операция `depositForHigh` начинает очень долго исполняться.
+
+                    Мы можем легко параллелизовать наше начисление бонусов
+                    ---
+
+                    ```scala [1-15]
+                    import cats.effect.syntax.concurrent._
+
+                    final class BoundedBonusDistributionImpl[F[_]: Concurrent](
+                      maxParallelism: Int
+                      users: UserRepository[F],
+                      bonus: BonusAccountRepository[F]
+                    ) extends BonusDistribution[F] {
+                      ...
+                    ```
+                    ---
+
+                    ```scala [1-15]
+                      ...
+                      def depositForHigh(amount: Amount): F[Unit] =
+                        for {
+                          users  <- users.selectWithLevel(ServiceLevel.High)
+                          userIds = users.map(_.userId)
+                          _ <- userIds.parTraverseN(maxParallelism) { userId =>
+                            bonus.deposit(userId, amount)
+                          }
+                        } yield ()
+                    }
+                    ```
+
+                    ---
+
+                    Теперь наша реализация может легко конкуретно обновлять начисление бонусов пользователям
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Тестирование
+
+
+                    ---
+
+                    Альтернативные реализации могут быть использованы для написания ручных моков
+
+                    ```scala [1-15]
+                    import cats.syntax.applicative._
+
+                    final class MockUserRepository[F[_]: Applicative](
+                      users: Map[ServiceLevel, Vector[User]]
+                    ) extends UserRepository[F] {
+
+                      def selectWithLevel(level: ServiceLevel): F[Vector[User]] =
+                        users.get(level).getOrElse(Vector.empty[User]).pure[F]
+                    }
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    import cats.data.StateT
+                    case class BonusState(vector: Vector[(UserId, Amount)])
+                      extends AnyVal
+                    type Mock[F[_], A] = StateT[F, BonusState, A]
+                    final class MockBonusAccountRepository[F[_]: Applicative]
+                      extends BonusAccountRepository[Mock] {
+                      def deposit(
+                        userId: UserId,
+                        amount: Amount
+                      ): Mock[F, Unit] =
+                        StateT.modify[F, BonusState](s =>
+                          BonusState(s.vector :+ ((userId, amount)))
+                        )
+                    }
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    object Test extends App {
+                      def run[F[_]: Monad]: F[BonusState] = {
+                        val users = Vector(
+                          User(UserId("martin"), ServiceLevel.High, "Martin"),
+                          User(UserId("steven"), ServiceLevel.High, "Steven"),
+                          User(UserId("michael"), ServiceLevel.Low, "Michael"),
+                        )
+
+                    ...
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    ...
+                        val userRepo     =
+                          new MockUserRepository[Mock[F, *]](susers)
+                        val bonusRepo    =
+                          new MockBonusAccountRepository[F]
+                        val distribution =
+                          new BonusDistributionImpl[Mock[F, *]](
+                            userRepo, bonusRepo
+                          )
+                        distribution
+                          .depositForHigh(Amount(100))
+                          .runS(BonusState(Vector.empty))
+                      }
+                    ...
+                    ```
+                    ---
+
+                    ```scala [1-15]
+
+                      assert(
+                        // Id[A] = A
+                        Test.run[Id] == BonusState(
+                          Vector(
+                            (UserId("martin"), Amount(100)),
+                            (UserId("steven"), Amount(100))
+                          )
+                        ) // true
+                      )
+                    }
+                    ```
+
+                    ---
+
+                    Такой тест - чистый. Нет необходимости в дополнительных компонентах для асинхронного
+                    вычисления.
+
+                    Нет необходимости создавать специальный тред пул или выставлять другие настройки для рантайма
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Почему не стоит использовать Sync / Async?
+
+                    ---
+
+                    `Sync` and `Async` тайпклассы опасны для `Tagless Final`
+
+                    ```scala [1-15]
+                    def wow[F[_]: Sync](userRepo: UserRepository[F]): F[Unit] =
+                      userRepo
+                        .selectWithLevel(ServiceLevel.Low)
+                        .flatMap { us =>
+                           us.traverse(u =>
+                             Sync[F].delay(println(s"User: $u"))
+                           )
+                        }
+                    ```
+
+                    ---
+
+                    `Sync`, например, может
+                    - вывести что-то в консоль
+                    - прервать исполнение с какой-то ошибкой
+                    - или производить другие сайд-эффекты
+
+                    ---
+
+                    Это нарушает наше желание ограничить все возможные операции в нашем контексте
+
+                    Таким образом не стоит использовать `Sync` и `Async` в бизнес домене. С другой стороны,
+                    мы можем использовать их для определения базовых операций
+
+                    ---
+
+                    Ок, а как тогда нам что-то залоггировать что-то или вывести в консоль?
+
+                    ---
+
+                    Для этого мы можем объявить новую базовую операцию:
+
+                    ```scala [1-15]
+                    trait Print[F[_]] {
+                      def println(s: String): F[Unit]
+                    }
+
+                    object Print {
+                      def apply[F[_]](implicit print: Print[F]): Print[F] =
+                        print
+
+                      implicit def fromSync[F[_]: Sync]: Print[F] =
+                        new Print[F] {
+                          def println(s: String): F[Unit] =
+                            Sync[F].delay(println(s))
+                        }
+                    }
+                    ```
+
+                    ---
+
+                    И теперь мы можем переписать `wow` с использованием новой операции `print`:
+
+                    ```scala [1-15]
+                    def wow2[F[_]: Monad: Print](
+                      userRepo: UserRepository[F]
+                    ): F[Unit] =
+                      userRepo
+                        .selectWithLevel(ServiceLevel.Low)
+                        .flatMap { us =>
+                           us.traverse(u =>
+                             Print[F].print(s"User: $u")
+                           )
+                        }
+                    ```
+
+                    ---
+
+                    Теперь `wow2` может только выводить значения, и не может выкидывать ошибки или делать
+                    другие сайд-эффекты.
+
+                    Более того, мы можем спокойно замокать и `Print`, и оставить тесты чистыми
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Итоги
+
+                    ---
+
+                    Tagless Final помогает нам достигать следующих свойств:
+                    - Расширения - мы можем легко добавлять новые операции без ломающих изменений
+                    - Тестирования - легко создавать моки, даже для асинхронных процессов
+                    - Local Reasoning - легко понимать, что на конкретном участке кода возможно,
+                    а что нет
+                    - Рефакторинг - естественное разделение бизнес логики и конкретных реализаций
+
+                </textarea>
+            </section>
+        </section>
+    </div>
+</div>
+
+
+</body>
+</html>

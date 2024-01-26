@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <link href="/app/node_modules/reveal.js/dist/reveal.css" rel="stylesheet">
+    <title>Лекция 09 - IO Монада</title>
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <!--Intro-->
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## IO Монада
+
+                    Лекция 09
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    Мы знаем, что
+
+                    - Тотальные функции - это _хорошо_
+                    - Чистые функции - это _хорошо_
+                    - Ссылочная прозрачность - это _хорошо_
+
+                    но ...
+                    ---
+
+                    Невозможно написать _полезную_ программу без использования сайд-эффектов
+
+                    ---
+
+                    Если, конечно, мы не хотим превратить наш компьютер в печку
+
+                    ---
+
+                    Как нам, как программистам функциональной парадигмы, быть?
+
+                    Как мы можем выразить наличие сайд-эффектов в системе типов?
+
+                    ---
+
+                    Давайте предположим, что у нас есть некий специальный тип `World`, который будет в себя включать
+                    состояние всего реального мира (буквально все, что существует в мире):
+
+                    ```scala [1-15]
+                    type World
+                    ```
+
+                    ---
+
+                    Как тогда будет выглядеть функция, которая производит сайд-эффект?
+
+                    Какую сигнатуру будет иметь такая функция?
+
+                    Для примера, какую сигнатуру будет иметь функция записи в консоль? чтения из консоли?
+                    ---
+
+                    ```scala [1-15]
+                    // Берем состояние мира, как аргумент
+                    // Достаем из мира консоль
+                    // Добавляем в консоль новую строчку
+                    // Возвращаем новое состояние мира с новой консолью
+                    def putStrLn(world: World, input: String): World = ???
+
+                    // Берем состояние мира, как аргумент
+                    // Достаем из мира консоль
+                    // Читаем из нее новую строчку
+                    // Возвращаем новое состояние мира с новой консолью
+                    // и прочитанную строчку
+                    def readStrLn(world: World): (World, String) = ???
+                    ```
+
+                    ---
+
+                    Теперь, давайте напишем программу, которая будет использовать эти функции:
+
+                    ```scala [1-15]
+                    def program(world: World): World = {
+                      val (newWorld: World, stranger: String) =
+                        readStlLn(world)
+                      val greeting: String = s"Hello, $stranger"
+                      putStrLn(newWorld, greeting)
+                    }
+                    ```
+                    ---
+
+                    Теперь нам всего лишь остается создать начальный инстанс нашего `World`
+
+                    Но, к сожалению, мы сделать этого не можем
+
+                    Вместо этого, давайте перепишем нашу программу без явного упоминания `World`
+
+                    ---
+
+                    ```scala [1-15]
+                    def putStrLn(input: String): World => World = ???
+                    def readStrLn: World => (World, String) = ???
+
+                    def program: World => World = { world =>
+                      val (newWorld: World, stranger: String) =
+                        readStlLn(world)
+                      val greeting: String = s"Hello, $stranger"
+                      putStrLn(greeting)(newWorld)
+                    }
+                    ```
+
+                    ---
+
+                    Мы все еще используем `world`, как аргумент внутри нашей программы
+
+                    Давайте определим новый тип, который будет его скрывать
+
+                    ---
+
+                    ```scala [1-15]
+                    type WithSideEffect[A] = World => (World, A)
+                    ```
+
+                    ---
+
+                    И определим несколько уже известных нам комбинаторов
+
+                    ---
+
+                    ```scala [1-15]
+                    object WithSideEffect {
+                      def pure[A](a: A): WithSideEffect[A] =
+                        world => (world, a)
+
+                      def flatMap[A, B](
+                        fa: WithSideEffect[A],
+                        f: A => WithSideEffect[B]
+                      ): WithSideEffect[B] = { world =>
+                        val (newWorld, res) = fa(world)
+                        f(res)(newWorld)
+                      }
+                      // ...
+                    ```
+
+                    ---
+
+                    ```scala[1-15]
+                      // ...
+                      def map[A, B](
+                        fa: WithSideEffect[A],
+                        f: A => B
+                      ): WithSideEffect[B] =
+                        flatMap[A, B](fa, f.andThen(pure[B]))
+                    }
+                    ```
+
+                    ---
+
+                    Теперь давайте выразим нашу программу через `map` и `flatMap`
+
+                    ```scala [1-15]
+                    def putStrLn(input: String): WithSideEffect[Unit] = ???
+                    def readStrLn: WithSideEffect[String] = ???
+
+                    def program: WithSideEffect[Unit] = {
+                      readStrLn.flatMap { stranger =>
+                        val greeting: String = s"Hello, $stranger"
+                        putStrLn(greeting)
+                      }
+                    }
+                    ```
+
+                    ---
+
+                    А теперь давайте еще раз вспомним про `for-comprehension` и напишем
+                    императивную программу
+
+                    ---
+
+                    ```scala [1-15]
+                    def program: WithSideEffect[Unit] =
+                      for {
+                        stranger <- readStrLn
+                        greeting: String = s"Hello, $stranger"
+                        _ <- putStrLn(stranger)
+                      } yield ()
+                    ```
+
+                    ---
+
+                    Теперь мы избавились от всех упоминаний типа `World`
+
+                    Но, наша программа (выражение типа `WithSideEffect`)- это все еще функция
+
+                    Она не делает что-то полезное, пока мы явно ее не вызовем
+
+                    ---
+
+                    Нам необходимо что-то, что могло ее запускать. Допустим, что у нас появляется
+                    альтернативная точка входа в программу с типом `WithSideEffect`:
+
+                     ```scala [1-15]
+                    def run(args: Array[String]): WithSideEffect[Unit] =
+                      program
+
+                    def main(args: Array[String]): Unit = {
+                      // каким-то образом мы вызываем run(args)
+                    }
+                    ```
+
+                    ---
+
+                    Такая функция `run` называется концом мира
+
+                    Она представляет из себя границу между миром чистых программ и нечистого рантайма
+
+                    Сайд-эффекты при таком представлении вычисляются уже где-то за границей конца мира,
+                    то есть где-то в методе `main` (не `run`)
+
+                    Именно поэтому наш код оперирует только чистыми функциями и ссылочно-прозрачными выражениями
+
+                    ---
+
+                    ```scala [1-15]
+                    def programTwo: WithSideEffect[Unit] =
+                      for {
+                        stranger <- readStrLn
+                        greeting: String = s"Hello, $stranger"
+                        _ <- putStrLn(greeting)
+                        _ <- putStrLn(greeting)
+                        _ <- putStrLn(greeting)
+                      } yield ()
+                    // 3 раза выводим: Hello, $stranger
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    def programThree: WithSideEffect[Unit] =
+                      for {
+                        stranger <- readStrLn
+                        greeting: String = s"Hello, $stranger"
+                        print = putStrLn(greeting)
+                        _ <- print
+                        _ <- print
+                        _ <- print
+                      } yield ()
+                    // 3 раза выводим: Hello, $stranger
+                    ```
+
+                    ---
+
+                    Каждый раз, когда мы видим, что функция возвращает `WithSideEffect`, мы знаем, что такая
+                    функция будет производить _какой-то_ сайд-эффект во время исполнения
+
+                    Мы таким образом явно декларируем использование сайд-эффектов таким образом, при этом оставляя
+                    чистоту и ссылочную прозрачность
+
+                    ---
+
+                    Более того, если мы вызовем такую функцию, то у нас не будет выбора - мы должны будем вернуть и в нашей
+                    функции `WithSideEffect`:
+
+
+                    ```scala [1-15]
+                    def complexComputation: WithSideEffect[BigDecimal] = ???
+                    def pureLogic(from: BigDecimal): String = ???
+
+                    def myProgram: WithSideEffect[String] =
+                      map(complexComputation, pureLogic)
+                    ```
+
+                    ---
+
+                    Сайд-эффекты в такой нотации могут содержать в себе все, что угодно: чтение из консоли, сохранение данных
+                    в БД или обращение к другому сервису по HTTP
+
+                    Мы все равно должны выделять нашу бизнес логику в функции, которые не возвращают `WithSideEffect` для
+                    того, чтобы поддерживать __Local Reasoning__ и тестируемость
+
+                    ---
+
+                    Напоминаю, что __Local Reasoning__ - это способность думать о корректности программу локально,
+                    используя только сигнатуру функции и ее реализацию
+
+                    ---
+
+                    В целом, такой концепт объявления вычисления с сайд-эффектами называется `IO` монадой
+
+                    ```scala [1-15]
+                    type IO[A] = WithSideEffect[A]
+                    ```
+                    ---
+
+                    Scala экосистема насчитывает несколько имплементаций такого концепта:
+
+                    - `cats.effect.IO`
+                    - `zio.ZIO`
+                    - `monix.Task`
+
+                    Более того, они позволяют работать не только с синхронными вычислениями.
+                    Они также позволяют писать конкурентный код. Как писать - посмотрим в следующих лекциях.
+
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                    <textarea data-template>
+                        ## Реализация `IO` монады
+
+                        Как это работает в Scala?
+
+                        ---
+
+                        Мы можем ввести специальный тип для функции: __`() => T`__
+
+                        ```scala [1-15]
+                        trait IO[+T] {
+                          def impureCompute(): T
+                        }
+                        ```
+
+                        ---
+
+                        ```scala [1-15]
+                        def putStrLn(line: String): IO[Unit] =
+                          () => println(line)
+
+                        putStrLn("Hello, world!")  // ничего не делает
+                        putStrLn("Hello, world!").impureCompute() // печатает в консоль
+                        ```
+
+                        ---
+
+                        Такое определение выдерживает свойство ссылочной прозрачности
+
+                        ```scala [1-15]
+                        val a = putStrLn("Hello, world!")
+                        a
+                        a
+                        ```
+
+                        ```scala [1-15]
+                        putStrLn("Hello, world!")
+                        putStrLn("Hello, world!")
+                        ```
+
+                        Оба этих определения - одинаковые. И оба ничего не делают
+
+                        ---
+
+                        Такой тип очень часто называют отложенным вычислением
+
+                        Он ленивый, потому что он ничего не запускает в момент своего создания,
+                        только в момент явного старта.
+
+                        Такие вычисления не мемоизируются и повторяются на каждый вызов, в отличии от `lazy val`
+
+                        `impureCompute` вызовы обычно лимитированы несколькими местами в программе,
+                        чаще всего одним - границей мира.
+
+                        ---
+
+                        Эта функция чистая?
+
+                        ```scala [1-15]
+                        def readln(): String = scala.io.StdIn.readLine()
+                        ```
+
+                        ---
+
+                        ```scala [1-15]
+                        val getStrLn: IO[String] = { () =>
+                          scala.io.StdIn.readLine()
+                        }
+                        ```
+
+                        Это `val` вместо `def`, это правильно? Почему?
+
+                        ---
+
+                        Как мы определяем чистую функцию с аргументом, которая будет читать пользовательский
+                        ввод в консоль и печатать аргумент и пользовательский ввод?
+
+
+                        ```scala [1-15]
+                        def echo(line: String): Unit = {
+                          val userInput = scala.io.StdIn.readLine()
+                          println(line)
+                          println(userInput)
+                        }
+                        ```
+                        ---
+
+                        ```scala [1-15]
+                        def printTwice(line: String): IO[Unit] = { () =>
+                          val userInput = scala.io.StdIn.readLine()
+                          println(line)
+                          println(userInput)
+                        }
+                        ```
+
+                        ```scala [1-15]
+                        def printTwice(line: String): IO[Unit] = { () =>
+                          val userInput = getStrLn.impureCompute()
+                          putStrLn(line).impureCompute()
+                          putStrLn(userInput).impureCompute()
+                        }
+                        ```
+
+                        ---
+
+                        Давайте введем `map` и `flatMap` комбинаторы:
+
+                        ```scala [1-15]
+                        trait IO[+T] {
+                          def impureCompute(): T
+
+                          def flatMap[O](f: T => IO[O]): IO[O] = { () =>
+                            val intermediate: T = impureCompute()
+                            f(intermediate).impureCompute()
+                          }
+
+                          def map[O](f: T => O): IO[O] = { () =>
+                            f(impureCompute())
+                          }
+                        }
+                        ```
+
+                        ---
+
+                        Последовательность вычислений через `flatMap`:
+
+                        ```scala [1-15]
+                        def printTwice(line: String): IO[Unit] =
+                          getStrLn.flatMap { userInput =>
+                            putStrLn(line).flatMap { _ =>
+                              putStrLn(userInput)
+                            }
+                          }
+
+                        ---
+
+                        Пример с for-comprehensions:
+
+                        ```scala [1-15]
+                        def printTwice(line: String): IO[Unit] =
+                          for {
+                            userInput <- getStrLn
+                            _ <- putStrLn(line)
+                            _ <- putStrLn(userInput)
+                          } yield ()
+                        ```
+
+                        ---
+
+                        Сравните еще раз с императивным подходом:
+
+                        ```scala [1-15]
+                        def printTwice(line: String): Unit = {
+                          val userInput = readLn()
+                          println(line)
+                          println(userInput)
+                        }
+                        ```
+                    </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Операции с `IO`
+
+                    Что мы с ним можем делать?
+
+                    ---
+
+                    Любое чистое выражение мы можем поднять до нечистого:
+
+                    ```scala [1-15]
+                    def add(l: Int, r: Int): Int = l + r
+
+                    def impureAdd(l: Int, r: Int): IO[Int] = {
+                      val res = add(l, r)
+                      () => res
+                    }
+
+                    def deferredAdd(l: Int, r: Int): IO[Int] =
+                      { () => add(l, r) }
+                    ```
+
+                    Какая разница между `impureAdd` и `deferredAdd`?
+                    ---
+
+                    Обычно, поднятие значения `T` в `IO[T]` происходит через функцию `pure`:
+
+                    ```scala [1-15]
+                    object IO {
+                      def pure[T](value: T): IO[T] =
+                        { () => value }
+                    }
+                    ```
+
+                    ---
+
+                    Теперь предположим у нас есть список строк
+
+                    ```scala [1-15]
+                    val strings = List("Hello", "World")
+                    ```
+
+                    Как мы можем вывести в консоль все строки последовательно используя `putStrLn`, `flatMap` и рекурсию?
+
+                    ---
+
+                    `traverse` комбинатор - это аналог `foreach` и `map` методов для списков.
+
+                    ```scala [1-15]
+                    def traverse[T, O](
+                      list: List[T],
+                      computation: T => IO[O],
+                    ): IO[List[O]] =
+                      list match {
+                        case x :: xs =>
+                          for {
+                            res <- computation(x)
+                            resRest <- traverse(xs, computation)
+                          } yield res :: resRest
+                        case Nil => IO.pure(Nil)
+                      }
+                    ```
+
+                    ---
+
+                    Этот комбинатор композирует предоставленную сайд-эффектящую функцию на каждом элементе последовательно
+                    и возвращает список результатов
+
+                    ---
+
+                    Другой полезный комбинатор - `sequence`:
+
+                    ```scala [1-15]
+                    def sequence[T](
+                      list: List[IO[T]]
+                    ): IO[List[T]] =
+                      traverse(list, identity)
+                    ```
+
+                    Он комбинирует список вычислений последовательно и возвращает вычисление со всеми результатами.
+
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Ошибки в `IO`
+
+                    Как с ними работать?
+
+                    ---
+
+                    Отдельный важный аспект, который нужно держать во внимании - это потенциальные ошибки и исключения
+                    в сайд-эффектящем коде
+
+                    ```scala [1-15]
+                    val fail: IO[Nothing] = { () =>
+                      throw new RuntimeExceptions("no code is executed after me")
+                    }
+                    ```
+
+                    Как и в императивном коде, исключения прекращают цепочку вычислений и происходит ранний возврат.
+                    ---
+
+                    ```scala [1-15]
+                    (for {
+                      _ <- putStrLn("Hello")
+                      _ <- fail
+                      _ <- putStrLn("world")
+                    } yield ()).impureCompute()
+                    ```
+
+                    Как этот код себя поведет?
+                    ---
+
+                    Теперь давайте представим, что мы хотим отлавливать ошибки и вводить дополнительную логику их
+                    обработки.
+
+                    Мы можем реализовать функцию `attempt`, которая будет гарантировано возвращать
+                    результат вычисления обернутое в `Try`:
+
+                    ```scala [1-15]
+                    def attempt[T](
+                      computation: IO[T],
+                    ): IO[Try[T]] = { () =>
+                      Try(computation.impureCompute())
+                    }
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    (for {
+                      _ <- putStrLn("Hello")
+                      result <- attempt(fail)
+                      _ <- result match {
+                        case Success(i) => putStrLn("world")
+                        case Failure(throwable) =>
+                          putStrLn("I failed with: " + throwable)
+                      }
+                    } yield ()).impureCompute()
+                    ```
+
+                    ---
+
+                    Мы также можем обрабатывать ошибки частично с помощью `PartialFunction`:
+
+                    ```scala [1-15]
+                    def catchErrors[T](computation: IO[T])(
+                      handler: PartialFunction[Throwable, IO[T]],
+                    ): IO[T] = attempt(computation).flatMap {
+                      case Success(i) => IO.pure(i)
+                      case Failure(throwable)
+                        if handler.isDefinedAt(throwable) =>
+                          handler(throwable)
+                      case Failure(throwable) => throw throwable
+                    }
+                    ```
+
+                    ---
+                    ```scala [1-15]
+                    (for {
+                      _ <- putStrLn("Hello")
+                      result <- catchErrors(fail) {
+                        case throwable =>
+                          putStrLn("I failed with: " + throwable)
+                      }
+                    } yield ()).impureCompute()
+                    ```
+
+                    ---
+
+                    Наконец, давайте реализуем границу мира:
+
+                    ```scala [1-15]
+                    abstract class IOApp {
+
+                      def run(args: Array[String]): IO[Unit]
+
+                      final def main(args: Array[String]): Unit =
+                        run(args).impureCompute()
+                    }
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    object Main extends IOApp {
+                      def printTwice(line: String): IO[Unit] =
+                        for {
+                          userInput <- getStrLn
+                          _ <- putStrLn(line)
+                          _ <- putStrLn(userInput)
+                        } yield ()
+
+                      def run(args: Array[String]): IO[Unit] =
+                        printTwice("Hello!")
+                    }
+                    ```
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Стеко-безопасность IO
+
+                    ---
+
+                    В текущей имплементации, наш `IO` может переполнить стек, для этого просто стоит сделать несколько
+                    рекурсивных вызовов через `flatMap`
+
+                    В Scala для IO монад и ленивых вычислений существует специальная техника для обхода этого ограничения,
+                    которая называется _трамплин_ (trampolining)
+
+                    ---
+
+                    Мы можем представить наш IO, как некую структуру данных - дерево, которое содержит вычисления в каждом
+                    из своих узлов.
+
+                    ```scala [1-15]
+                    object IO {
+                      final case class Pure[A](v: A) extends IO[A]
+                      final case class Suspended[A](call: () => IO[A])
+                        extends IO[A]
+                      final case class FlatMap[A, B](
+                        sub: IO[A],
+                        cont: A => IO[B]
+                      ) extends IO[B]
+                    }
+                    ```
+
+                    ---
+
+                    - Для стеко-безопасности нам необходимо иметь отдельный узел под `flatMap` - `FlatMap`
+                    - Основная идея трамплина - перенести в heap рекурсивные фреймы и вычислять их последовательно
+
+                    ---
+
+                    Вот так будет выглядеть стеко-безопасная функция интерпретации:
+
+                    ```scala [1-15]
+                    sealed trait IO[+A] {
+                      def step: Either[() => IO[A], A] =
+                        this match {
+                          case Pure(v)         => Right(v)
+                          case Suspended(call) => Left(call)
+                          case FlatMap(sub, cont) => sub match {
+                            case Done(v) => cont(v).run
+                            case Suspended(call) => Left(() => FlatMap(call(), cont))
+                            case FlatMap(sub2, cont2) =>
+                              (FlatMap(sub2, (x: Any) => FlatMap(cont2(x), cont)): IO[A]).run
+                          }
+                        }
+
+                    ```
+                    ---
+
+                    ```scala [1-15]
+                    sealed trait IO[+A] {
+                      ...
+
+                      def run: A = step match {
+                        case Right(v) => v
+                        case Left(more) => more().run
+                      }
+                    }
+                    ```
+
+                    ---
+
+                    И, конечно, чтобы она полностью работала - нам нужно переопределить метод `flatMap`:
+
+                    ```scala [1-15]
+                    sealed trait IO[+A] {
+                      def flatMap[B](f: A => IO[B]): IO[B] =
+                        FlatMap(this, f)
+                    }
+                    ```
+
+                    ---
+
+                    Готово, теперь вместо аллокации нового стекфрейма - будет аллокация объекта на куче
+
+                    Так устроены все IO монады и на них похожие:
+
+                    - `cats.Eval`
+                    - `cats.effect.IO`, `cats.effect.SyncIO`
+                    - `zio.ZIO`
+                    - `monix.Task`, `monix.Coeval`
+
+                </textarea>
+            </section>
+        </section>
+    </div>
+</div>
+
+<script src="/main.js" type="module"></script>
+</body>
+</html>

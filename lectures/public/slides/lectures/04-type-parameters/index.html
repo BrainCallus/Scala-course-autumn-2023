@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    
+    <title>Лекция 04 - Параметры Типов</title>
+  <script type="module" crossorigin src="/lectures/assets/main.68923260.js"></script>
+  <link rel="stylesheet" href="/lectures/assets/main.3bd49d33.css">
+</head>
+
+<body>
+<div class="reveal">
+    <div class="slides">
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Параметры Типов
+
+                    Лекция 04
+                    - История дженериков
+                    - Стирание типов и мономорфизация
+                    - Ограничения типов
+                    - Вариатность
+                </textarea>
+            </section>
+        </section>
+
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    Java 1.4
+
+                    ```java [1-15]
+                    List v = new ArrayList();
+                    v.add("test");
+                    Integer i = (Integer)v.get(0);
+                    ```
+
+                    Java 1.5
+                    ```java [1-15]
+                    List<String> v = new ArrayList<String>();
+                    v.add("test");
+                    String i = v.get(0);  // compiles, no need to cast
+                    Integer j = v.get(0);  // compile error
+                    ```
+
+                    Оба примера компилируются на последней версии Java
+                    ---
+
+                    ```java [1-15]
+                    public class ArrayList<E> implements List<E> {
+                      private Object[] elementData;
+                      private int size;
+
+                      public E get(int index) {
+                        return (E) elementData[index];
+                      }
+                    }
+                    ```
+
+                    Полностью обратно совместимо с:
+
+                    ```java [1-15]
+                    public class ArrayList implements List {
+                      private Object[] elementData;
+                      private int size;
+
+                      public Object get(int index) {
+                        return elementData[index];
+                      }
+                    }
+                    ```
+                    ---
+
+                    * 1986 – ["What is OOP?"](https://www.stroustrup.com/whatis.pdf) статья Бьёрна Страуструпа, предложившего шаблоны для C++.
+                    * 1993 – ["Monads for functional programming"](https://homepages.inf.ed.ac.uk/wadler/papers/marktoberdorf/baastad.pdf) статья от **Филиппа Водлера**.
+                    * 1998 – Филипп Водлер, **Мартин Одерски**, Гилад Браха, Дейв Штаутмаер представили Generic Java, расширение Java.
+                    ---
+                    * 2001 – Одерски и другие работают над Pizza, Java-совместимым языком с поддержкой дженериков и АДТ.
+                    * 2004 – Встраивание Generic Java в официальный релиз Java 1.5.
+                    * 2006 – Релиз Scala 2 от Мартина Одерски
+                    * 2020 – ["Featherweight Go"](https://arxiv.org/abs/2005.11710) статья от Филипа Водлера, введение дженериков в Go.
+                </textarea>
+            </section>
+        </section>
+
+        <section>
+            <section data-markdown>
+          <textarea data-template>
+                    ### Стирание Типов
+
+                    Каждый дженерик тип и метод создают только одну копию себя.
+
+                    Параметры типы стираются после компиляции.
+
+                    ```scala [1-15]
+                    class Option[+T]
+                    ```
+                    компилируется в байткод, эквивалетный следующему
+
+                    ```scala [1-15]
+                    class Option
+                    ```
+
+                    Рантайм классы тоже эквивалетны:
+
+                    ```scala [1-15]
+                    (new Option[Int]).getClass == (new Option[String]).getClass
+                    ```
+                    ---
+
+                    Такая перегрузка возможна:
+                    ```scala [1-15]
+                    def greet(cat: Cat): Unit = {}
+                    def greet(dog: Dog): Unit = {}
+                    ```
+
+                    А такая приводит к ошибке компиляции:
+                    ```scala [1-15]
+                    def greet(cats: List[Cat]): Unit = {}
+                    def greet(cats: List[Dog]): Unit = {}
+                    ```
+
+                    Методы перегружаются основываясь на классах аргументов после стирания
+                    ---
+                    Паттерн матчинг на стираемых типах не возможен.
+
+                    Это приводит к исключению `ClassCastException` в рантайме или ошибке компиляции.
+
+                    ```scala [1-15]
+                    val a: List[Cat] = List(new Cat)
+                    // a.isInstanceOf[List[Dog]] == true
+                    a match {
+                      case i: List[Dog] => i.foreach(_.bark())
+                      case i: List[Cat] => i.foreach(_.meow())
+                    }
+                    ```
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+          <textarea data-template>
+                  ### Мономорфизация
+
+                  Альтернативная техника по реализации дженериков. Мономорфизация создает копию дженерик класса на
+                  каждую комбинацию используемых параметров типов
+
+                  ---
+
+                  Представим, что Scala реализовывала бы технику мономорфизации:
+
+                  ```scala [1-15]
+                  sealed trait Option[+T]
+
+                  def printOpt[T](i: Option[T]): Unit = i.foreach(println)
+                  printOpt(Some(1))
+                  println(Some("Test"))
+                  ```
+                  скомпилировалось бы в
+                  ```scala [1-15]
+                  sealed trait Option_Int
+                  sealed trait Option_String
+
+                  def printOpt_Int(i: Option_Int): Unit = i.foreach(println)
+                  printOpt_Int(Some(1))
+                  println(Some("Test"))
+                  ```
+                  ---
+                  ### Проблемы
+
+                  - Раздувание кода - активное использование дженериков приводит к большому количеству сгенерированного кода.
+
+                  - Невозможность выразить полиморфную рекурсию
+
+                  ---
+                  Полное бинарное дерево - всегда содержит `2^n` элементов.
+
+                  ```scala [1-15]
+                  sealed trait CompleteBinTree[+T]
+                  object CompleteBinTree {
+                    case class Leaves[+T](value: T)
+                      extends CompleteBinTree[T]
+                    case class Branch[+T](tree: CompleteBinTree[(T, T)])
+                      extends CompleteBinTree[T]
+                  }
+                  ```
+                  Самый простой кейс мономорфизация `CompleteBinTree[Int]` приводит к бесконечному количеству вариантов
+                  типов во время компиляции.
+
+                  ---
+                  ### Языки с мономорфизацией
+
+                  Большинство системных языков программирования - C++, Rust, Go (2+), D и другие.
+
+                  С#, но с нюансом - мономорфизация случается в рантайме с помощью виртуальной машины.
+
+                  Scala - эээ, что?
+
+                  ---
+                  ### Специализация
+
+                  Это трюк, чтобы снизить оверхед от лишнего оборачивания при работае с примитивными типами.
+
+                  ```scala [1-15]
+                  class Kek[@specialized(Specializable.Return) +T]
+                  object Test extends App {
+                    println(new Kek[Int].getClass.getName)    // Kek$mcI$sp
+                    println(new Kek[Unit].getClass.getName)   // Kek$mcV$sp
+                    println(new Kek[String].getClass.getName) // Kek
+                    println(new Kek[Object].getClass.getName) // Kek
+                  }
+                  ```
+                  В таком случае мы генерируем 6 дополнительных классов для каждого примитивного типа из `Specializable.Return`.
+              </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Ограничения типов
+
+                    Мы можем добавлять требования на сабтайпинг (`A <: B` и `A >: B`) для параметров типов для типов
+                    и методов.
+
+                    ```scala [1-15]
+                    val mutableCats = mutable.ArrayBuffer[Cat]()
+                    mutableCats.addOne(new Cat)
+
+                    def greet[T <: Animal](animals: mutable.ArrayBuffer[T]) =
+                      animals.foreach(_.greet)
+                    // ограниченный экзистенциальный тип:
+                    def greet(animals: mutable.ArrayBuffer[_ <: Animal]) =
+                      animals.foreach(_.greet)
+                    // это не скомпилируется:
+                    def addCat[T <: Animal](animals: mutable.ArrayBuffer[T]) =
+                      animals.addOne(new Cat)
+                    // а это скомпилируется:
+                    def addCat[T >: Cat](cats: mutable.ArrayBuffer[T]) =
+                      animals.addOne(new Cat)
+                    ```
+                    ---
+
+                    ```scala [1-15]
+                    class Animal
+                    class Cat extends Animal
+                    class BrownCat extends Cat
+                    class WhiteCat extends Cat
+
+                    class Cell[T](private var i: T) {
+                      def get: T = i
+                      def set(v: T): Unit = { i = v }
+                    }
+
+                    val cell = new Cell[Cat](new Cat)
+                    cell.set(new BrownCat)  // работает
+                    call.set(new Animal)    // не работает
+                    ```
+                    ---
+
+                    ```scala [1-15]
+                    trait Cell[T] {
+                      def get: T
+                      def set(v: T): Unit
+                    }
+
+                    trait Cell[T] {
+                      def get[O >: T]: O
+                      def set[O <: T](v: O): Unit
+                    }
+                    ```
+                    ---
+                    ```scala [1-15]
+                    sealed trait Option[+T] {
+                      def getOrElse[B >: T](orElse: B): B =
+                        if (isEmpty) orElse else this.get
+                    }
+                    ```
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Вариантность
+
+                    Как и сабтайпинг, один из атрибутов тайп параметра. Вариантность вводит правило сабтайпинга
+                    основываясь на сабтайпинге параметров типов.
+
+                    Существует три типа вариантность: ковариатность, контравариатность и инвариатность -
+                    комбинация двух первых.
+
+                    ```scala [1-15]
+                    sealed trait Option[+T]
+                    trait Function1[-I, +T]
+                    class ArrayBuffer[T]
+                    ```
+                    ---
+
+                    ### Ковариатность
+                    ```scala [1-15]
+                    sealed trait Option[+T]
+                    ```
+
+                    Для любого `A <: B` существует сабтайпинг `Option[A] <: Option[B]`
+
+                    Такой тип вариатность используется в основном для неизменяемых коллекций и фабрик - интерфейсов,
+                    которые возвращают значения.
+
+                    ```scala [1-15]
+                    trait RandomGenerator[+T] {
+                      def generate(): T
+                    }
+                    ```
+                    ---
+
+                    ```scala [1-15]
+                    val a: Option[Cat] = Some(new Cat)
+                    val b: Option[Animal] = a  // приведение через сабтайпинг
+
+                    val c: Option[List[Cat]] = Some(List(new Cat))
+                    val d: Option[Seq[Cat]] = c  // List[T] <: Seq[T]
+                    val e: Option[List[Animal]] = c  // List[Cat] <: List[Animal]
+                    val d: Option[Seq[Animal]] = c
+                    ```
+                    ---
+                    Ковариантные параметры типов не могут тип в контравариантной или инвариатной позиции.
+
+                    Примером контравариатной позиции - это аргумент функции.
+
+
+                    ```scala [1-15]
+                    trait Consume[+T] {
+                      def consume(v: T): Unit // не компилируются
+                    }
+                    ```
+                    ---
+
+                    ### Контравариатность
+
+                    Для любых `A <: B` существует сабтайпинг `Consume[B] <: Consume[A]` – отношение между итоговыми
+                    типами становится перевернуто.
+
+                    ```scala [1-15]
+                    trait Consume[-T] {
+                      def consume(v: T): Unit // компилируется
+                    }
+                    ```
+
+                    Контравариатность часто используется в аргументах функции и коньсюмерах - интерфейсах, которые
+                    принимают значения вместо того, чтобы их возвращать.
+
+                    ---
+
+                    Самый используемый контравариатный тип - функция:
+
+                    ```scala [1-15]
+                    trait Function1[-I1, +O] {
+                      def apply(v1: I1): O
+                    }
+
+                    trait Function2[-I1, -I2, +O] {
+                      def apply(v1: I1, v2: I2): O
+                    }
+                    ```
+                    ---
+
+                    ```scala [1-15]
+                    val a: (Animal => Unit) = { _ => () }
+                    // Cat <: Animal => Function1[Animal, Unit] <: Function1[Cat, Unit]
+                    val b: (Cat => Unit) = a
+
+                    val c: ((Cat => Unit) => Unit) = { f => f(new Cat) }
+                    // Cat <: Animal => Function1[Animal, Unit] <: Function1[Cat, Unit]
+                    // => Function1[Function1[Cat, Unit], Unit] <: Function1[Function1[Animal, Unit], Unit]
+                    val d: ((Animal => Unit) => Unit) = c
+                    ```
+                    ---
+                    ### Инвариатность
+
+                    Комбинация ковариантности и контравариантности
+
+                    ```
+                    A =:= B => mutable.List[A] =:= mutable.List[B]
+                    ```
+                    Используется для изменяемых коллекций и других типов, которые используются в ковариатной и
+                    контраваринтной позициях.
+
+                    ---
+
+                    ```scala [1-15]
+                    type F1[-T] = T => Unit
+                    type F2[T] = T => T
+                    type F3[+T] = Unit => T
+                    ```
+                </textarea>
+            </section>
+        </section>
+    </div>
+</div>
+
+
+</body>
+
+</html>

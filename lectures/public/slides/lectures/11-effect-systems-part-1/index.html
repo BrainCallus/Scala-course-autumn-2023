@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    
+    <title>Лекция 11 - Системы эффектов - Часть 1</title>
+  <script type="module" crossorigin src="/lectures/assets/main.68923260.js"></script>
+  <link rel="stylesheet" href="/lectures/assets/main.3bd49d33.css">
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <!--Intro-->
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Системы эффектов
+                    ### Часть 1
+
+                    Лекция 11
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    _Системой эффектов_ называют систему, которая позволяет
+                    работать с сайд эффектами (побочными эффектами) в чистой
+                    функциональной парадигме.
+
+                    ---
+
+                    Они предоставляют свой рантайм, то есть определяют, как эффекты
+                    будут исполняться, и предоставляют платформу, на которой строятся
+                    промышленные функциональные приложения.
+
+                    ---
+
+                    Большинство из них строятся на концепте _IO Монады_, позволяя легко
+                    писать логику в императивном стиле и работать с сайд эффектами в чистом
+                    функциональном стиле.
+
+                    ---
+
+                    Помимо сайд эффектов, они также позволяют работать с асинхронными вычислениями
+                    и строить свои конкурентные реактивные приложения.
+
+                    Этого они достигают с помощью тесной интеграции асинхронных вычислений в
+                    свой рантайм.
+
+                    ---
+
+                    Системы эффектов на текущий момент являются стандартом написания бэкенд приложений
+                    на Scala
+
+                    ---
+
+                    Экосистема Scala насчитывает несколько вариаций реализаций
+                    систем эффектов:
+
+                    - `monix.Task`
+                    - `zio.ZIO`
+                    - `cats.effect.IO`
+
+                    ---
+
+                    ## `monix.Task`
+
+                    На текущий момент активно не развивается, поэтому мы не будем его разбирать
+
+                    Возможен новый виток развития от автора - Александра Недэльку (Alexandru Nedelcu)
+
+                    ---
+
+                    ## `zio.ZIO`
+
+                    Активно развивается, благодаря компании Ziverge
+
+                    Основные мейнтейнры:
+                    - Джон Де Гуз (John De Goes)
+                    - Адам Фрейзер (Adam Fraser)
+
+                    ---
+
+                    Ключевые особенности:
+                    - встроенная работа с зависимостями
+                    - встроенная возможность работать с типизированными ошибками
+
+                    Цель: выстроить экосистему (фреймворк) на замену Spring для построения
+                    высоконагруженных приложений
+
+                    ---
+
+                    ## `cats.effect.IO`
+
+                    Активно развивается, благодаря компании Typelevel
+
+                    Основные мейнтейнеры:
+                    - Дэниель Спивак (Daniel Spiewak)
+
+                    Ключевая особенность:
+                    - система тайпклассов для работы с асинхронными вычислениями
+
+                    ---
+
+                    Наиболее "старая" система эффектов, которая прошла несколько крупных
+                    эволюционных скачков (мажорных релизов)
+
+                    Наиболее простая для обучения
+
+                    Поэтому именно ее мы сегодня и начнем подробно изучать
+
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section>
+                <img src="/lectures/assets/cats-effect.cdeeef9f.png">
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+                    Библиотека `cats-effect` предоставляет:
+
+                    - Иерархию тайпклассов для различных аспкетов асинхронных вычислений с сайд-эффектами
+                    - Реализацию IO Монады
+                    - Конкуретные примитивы
+                    - Рантайм
+
+                    ---
+
+                    Начнем с синхронных сайд-эффект вычислений
+
+                    `IO.apply` и `IO.delay` позволяют откладывать синхронные сайд-эффект вычисления до
+                    границы мира:
+
+                    ```scala [1-15]
+                    import cats.effect.IO
+
+                    val program = for {
+                      _ <- IO(println("Hello 1!"))
+                      _ <- IO.delay(println("Hello 2!"))
+                      _ <- IO(println("Hello 2!"))
+                    } yield ()
+                    ```
+
+                    ---
+
+                    `IO.apply` и `IO.delay` принимают лениво выражения, которые
+                    вычисляют какой-то `A`
+
+                    ```scala [1-15]
+                    object IO {
+                      def apply[A](suspended: => A): IO[A] = IO.delay(suspended)
+                      def delay[A](suspended: => A): IO[A] = ???
+                    }
+                    ```
+                    ---
+
+                    Мы можем представить нашу последовательность действий в `program`, как граф:
+
+                    - Инструкция - вывести в стандартный ввод/вывод строку "Hello1!"
+                    - Инструкция - вывести в стандартный ввод/вывод строку "Hello2!"
+                    - Инструкция - вывести в стандартный ввод/вывод строку "Hello3!"
+
+                    ---
+
+                    Теоретически, мы можем прервать или отменить (_cancel_) исполнение нашего графа
+                    между двумя любыми инструкциями:
+
+                    - Инструкция - вывести в стандартный ввод/вывод строку "Hello1!"
+                    - Инструкция - вывести в стандартный ввод/вывод строку "Hello2!"
+                    - Прерываем исполнение
+                    - Инструкция - вывести в стандартный ввод/вывод строку "Hello3!"
+
+                    Инструкция c "Hello3!" никогда не будет вызвана
+
+                    ---
+
+                    Эквивалентный граф на IO:
+
+                    ```scala [1-15]
+                    val program = for {
+                      _ <- IO(println("Hello 1!"))
+                      _ <- IO.delay(println("Hello 2!"))
+                      _ <- IO.cancelled
+                      _ <- IO(println("Hello 2!"))
+                    } yield ()
+                    ```
+
+                    ---
+
+                    `cats-effect` поддерживают отмену вычислений по-умолчанию с соблюдением
+                    некоторых гарантий.
+
+                    По факту, любое наше `IO` вычисление теперь может завершиться в одном из трех
+                    состояний:
+
+                    - Вычисление успешно выполнено с результатом `A`
+                    - Вычисление завершилось с ошибкой `Throwable`
+                    - Вычисление было отменено
+
+                    Реализовано это с помощью структуры `Outcome`
+
+                    ---
+
+                    ```scala [1-15]
+                    sealed trait Outcome[F[_], E, A]
+                    object Outcome {
+                      final case class Succeeded[F[_], E, A](fa: F[A])
+                        extends Outcome[F, E, A]
+                      final case class Errored[F[_], E, A](e: E)
+                        extends Outcome[F, E, A]
+                      final case class Cancelled[F[_], E, A]()
+                        extends Outcome[F, E, A]
+                    }
+
+                    type OutcomeIO[A] = Outcome[IO, Throwable, A]
+                    ```
+
+                    ---
+
+                    `cats.effect.IO` позволяет нам корректно обработать каждое из состояний с помощью
+                    операторов `bracket`, `bracketCase`, `guarantee`, `guaranteeCase`:
+
+                    ```scala [1-15]
+                    import cats.effect.OutcomeIO
+
+                    trait IO[+A] {
+                      def bracket[B](use: A => IO[B])(release: A => IO[Unit]): IO[B]
+                      def bracketCase[B](use: A => IO[B])(release: (A, OutcomeIO[B]) => IO[Unit]): IO[B]
+                      def guarantee(finalizer: IO[Unit]): IO[A]
+                      def guaranteeCase(finalizer: OutcomeIO[A] => IO[Unit]): IO[B]
+                    }
+                    ```
+
+                    ---
+
+                    `guaranteeCase` позволяет всегда исполнить переданную функцию завершения,
+                    в независимости от результата исполнения:
+
+                    ```scala [1-15]
+                    def fail: IO[Unit] = IO.raiseError(new RuntimeException("boom!"))
+
+                    def program: IO[Unit] =
+                      fail.guaranteeCase {
+                        case Outcome.Succeeded(fa) => fa
+                        case Outcome.Errored(e) =>
+                          IO(println(s"Error: $e"))
+                        case Outcome.Canceled() =>
+                          IO(println("Cancelled"))
+                      }
+                    // stdout: Error: java.lang.RuntimeException
+                    ```
+                    ---
+
+                    Это не значит, что IO вычисление в этом случае не завершится с ошибкой. Ошибка будет
+                    передана дальше по стеку.
+
+                    Это значит, что мы корректно можем пронаблюдать и обработать ошибку
+
+                    ---
+
+                    Пример, с отменой:
+
+                    ```scala [1-15]
+                    def program: IO[Unit] =
+                      IO.cancelled.guaranteeCase {
+                        case Outcome.Succeeded(fa) => fa
+                        case Outcome.Errored(e) =>
+                          IO(println(s"Error: $e"))
+                        case Outcome.Canceled() =>
+                          IO(println("Canceled"))
+                      }
+                    // stdout: Cancelled
+                    ```
+
+                    ---
+
+                    Если мы не хотим различать 3 кейса, то нам достаточно использовать `guarantee`:
+
+                    ```scala [1-15]
+                    def program1: IO[Unit] =
+                      IO.unit.guarantee(IO(println("Guarantee 1")))
+
+                    def program2: IO[Unit] =
+                      IO.raiseError(new RuntimeException("boom!"))
+                        .guarantee(IO(println("Guarantee 2")))
+
+                    def program3: IO[Unit] =
+                      IO.cancelled.guarantee(IO(println("Guarantee 3")))
+
+                    // stdout: Guarantee 1
+                    // stdout: Guarantee 2
+                    // stdout: Guarantee 3
+                    ```
+
+                    ---
+
+                    `bracketCase` позволяет безопасно работать с ресурсами, также как и конструкция
+                    в Java `try {} catch {} finally {}`
+
+                    ```scala [1-15]
+                    import java.io.FileWriter
+
+                    def write(input: String): IO[Unit] =
+                      IO {
+                        val fw = new FileWriter("out.txt", true)
+                        new BufferedWriter(fw)
+                      }
+                        .bracketCase(bw => IO(bw.write(input))) {
+                          case (bw, Outcome.Succeeded(fa)) => fa.flatMap(_ => IO(bw.close()))
+                          case (bw, Outcome.Errored(e)) =>
+                            IO(println(s"Error: $e")).guarantee(IO(bw.close()))
+                          case (bw, Outcome.Canceled()) =>
+                            IO(println("Canceled")).guarantee(IO(bw.close()))
+                    }
+                    ```
+
+                    ---
+
+                    - Если мы успешно записали строку, то мы должны закрыть `BufferedReader`
+                    - Если мы неуспешно записали строку, то мы должны закрыть `BufferedReader`
+                    - Если до вызова записи в строку произошла отмена, то мы должны закрыть `BufferedReader`
+
+                    ---
+
+                    Такая работа с ресурсами может быть не слишком удобной. Скорее всего в своем коде мы захотим
+                    разделить объявление работы с ресурсом, от конкретной работы с ним.
+
+                    На помощь нам приходит специальная структура данных - `Resource`
+
+                    Она захватывает функции получения и высвобождения ресурса, и позволяет
+                    получить безопасный доступ до ресурса через функцию `use`
+
+                    ---
+
+                    ```scala [1-15]
+                    import cats.effect.Resource
+
+                    def bufferedWriter(filename: String): Resource[IO, BufferedWriter] =
+                      Resource.makeCase(IO {
+                        val fw = new FileWriter(filename, true)
+                        new BufferedWriter(fw)
+                      }) {
+                        case (bw, Resource.ExitCase.Succeeded)  => IO(bw.close())
+                        case (bw, Resource.ExitCase.Errored(_)) => IO(bw.close())
+                        case (bw, Resource.ExitCase.Canceled)   => IO(bw.close())
+                      }
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    def write(input: String): IO[Unit] =
+                      bufferedWriter("out.txt")
+                        .use(bw => IO(bw.write(input)))
+                    ```
+
+                    ---
+
+                    `Resource` также является монадой и может быть скомпозирован через комбинатор
+                    `flatMap`:
+
+                    - Аллокация ресурсов будет последовательна относительно `flatMap`
+                    - Высвобождение ресурсов будет происходить в обратном порядке относительно `flatMap`
+
+                    ---
+
+                    ```scala [1-15]
+                    import java.io.BufferedReader
+
+                    final class BufferedReaders(
+                      val outLog: BufferedReader,
+                      val outTxt: BufferedReader
+                    ) {
+                      def writeLog(input: String): IO[Unit] =
+                        IO(outLog.write(input))
+                      def writeTxt(input: String): IO[Unit] =
+                        IO(outTxt.write(input))
+                    }
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    def bufferedReaders: Resource[IO, BufferedReader] =
+                      for {
+                        outLog <- bufferedReader("out.log")
+                        outTxt <- bufferedReader("out.txt")
+                      } yield new BufferedReaders(outLog, outTxt)
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    def program: IO[Unit] =
+                      bufferedReaders.use { readers =>
+                        for {
+                          _ <- readers.writeLog("Log #1")
+                          _ <- readers.writeTxt("Data #1")
+                        } yield ()
+                      }
+                    ```
+
+                    ---
+
+                    Последовательность действий при запуске:
+
+                    - Открытие файла `out.log`
+                    - Открытие файла `out.txt`
+                    - Запись `Log #1` в `out.log`
+                    - Запись `Data #1` в `out.txt`
+                    - Закрытие файла `out.txt`
+                    - Закрытие файла `out.log`
+
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Откладывание во времени
+
+                    Любое IO вычисление может быть отложено во времени через `IO.sleep`:
+
+                    ```scala [1-15]
+                    import scala.concurrent.duration._
+
+                    def program: IO[Unit] =
+                      for {
+                        // Отдельная инструкция для вывода в stdout
+                        _ <- IO.println("It's going to be legen...")
+                        _ <- IO.println("wait for it")
+                        _ <- IO.sleep(1.second)
+                        _ <- IO.println("dary!")
+                      } yield ()
+                    ```
+
+                    Между `legen` и `dary` будет пауза в исполнении в 1 секунду
+                    ---
+
+                    `IO.sleep` в отличии от `Thread.sleep` не приводит к блокировке к потока.
+
+                    То есть пока IO вычисление "спит", другие IO вычисления могут исполняться
+
+                    ---
+
+                    `cats.effect.IO` имеет стекобезопасный `flatMap`. Можно объявлять рекурсивные
+                    вычисления:
+
+                    ```scala [1-15]
+                    def loop(n: Long): IO[Unit] =
+                      for {
+                        _ <- IO.sleep(10.second)
+                        _ <- IO.println("Ping!")
+                        _ <- loop(n - 1)
+                      } yield ()
+                    ```
+
+                    ---
+
+                    Также, с помощью комбинаторов `delayBy` и `andWait` можно еще упростить
+                    функцию `loop`:
+
+                    ```scala [1-15]
+                    def loop(n: Long): IO[Unit] =
+                      IO
+                       .println("Ping!")
+                       .delayBy(10.seconds)
+                       .flatMap(_ =>
+                         loop(n - 1).andWait(1.second)
+                       )
+                    ```
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Файберы
+
+                    `cats.effect` реализует концепцию зеленых потоков через
+                    файберы (_fibers_)
+
+                    Каждое IO вычисление может быть запущено, как файбер:
+
+                    ```scala [1-15]
+                    def program: IO[FiberIO[Unit]] =
+                      IO.println("wow!").start
+                    ```
+
+                    ---
+
+                    При запуске файбера возвращается структура `Fiber`, которая позволяет или остановить вычисление
+                    (отменить - `cancel`). или дождаться результата вычисления (`join`):
+
+                    ```scala [1-15]
+                    trait Fiber[F[_], E, A] {
+                      def join: F[Outcome[F, E, A]]
+                      def cancel: F[Unit]
+                    }
+                    ```
+
+                    ---
+
+                    `Fiber`, в целом, можно рассматривать, как некую `Future`, то есть как значение, которое уже
+                    где-то будет запущено.
+
+                    Но, в отличии, от `Future` нам доступны действия по ожиданию значению или отмене
+
+                    ---
+
+                    Выполнение файбера может завершится одним из 3 вариантов:
+
+                    - Вычисление успешно
+                    - Вычисление завершилось с ошибкой
+                    - Вычисление было отменено
+
+                    ```scala [1-15]
+                    def programOne: IO[Unit] =
+                      for {
+                        fib <- IO.println("Ping!").start
+                        _   <- fib.join
+                      } yield ()
+                    ```
+
+                    ---
+
+                    Также мы можем останавливать исполнение файбера:
+
+                    ```scala [1-15]
+                    def programTwo: IO[Unit] =
+                      for {
+                        fib <- IO.println("Ping!").start
+                        _   <- fib.cancel
+                      } yield ()
+                    ```
+
+                    ---
+
+                    С одной стороны может показаться, что семантика остановки IO вычисления
+                    схожа с семантикой `Thread.interrupt`
+
+                    Но на самом деле это не так
+
+                    ---
+
+                    `Thread.interrupt` останавливает поток исполнения и сразу же возвращается.
+
+                    То есть на вызывающей стороне мы не можем понять, успел ли поток завершить свою работу,
+                    или он еще находится в процессе завершения, или он вообще проигнорировал результат вызова.
+
+                    ---
+
+                    `Fiber.cancel` завершает свое исполнение только тогда, когда файбер был полностью отменен.
+
+                    То есть исполнение `cancel` завершается только тогда все завершающие функции были выполнены, и сам
+                    файбер дошел до точки разрыва графа.
+
+                    ---
+
+                    ```scala [1-15]
+                    def loop: IO[Unit] =
+                      IO.println("Ping!").foreverM
+
+                    def program: IO[Unit]
+                      for {
+                        fib <- loop.start
+                        _   <- IO.sleep(10.seconds)
+                        _   <- fib.cancel
+                      } yield ()
+                    ```
+
+                    ---
+
+                    В примере у нас есть бесконечный цикл с выводом `"Ping!"` в стандартный ввод вывод.
+
+                    Может показаться, что такой код приведет к зависанию `program`, то есть `program` никогда
+                    не завершится.
+
+                    Но это не так
+
+                    ---
+
+                    При старте файбера с этим циклом на протяжении 10 секунд происходит какое-то количество
+                    выводов.
+
+                    Затем происходит вызов отмены файбера с циклом. Во время исполнения `cancel`, мы
+                    дожидаемся окончания очередной итерации цикла, и после этого отменяем исполнение цикла.
+
+                    ---
+
+                    ```scala [1-15]
+                    def loop: IO[Unit] =
+                      IO
+                       .println("Ping!")
+                       .foreverM
+                       .guarantee(IO.println("Finished"))
+
+                    def program: IO[Unit]
+                      for {
+                        fib <- loop.start
+                        _   <- IO.sleep(10.seconds)
+                        _   <- fib.cancel
+                      } yield ()
+                    ```
+
+                    ---
+
+                    В этом примере у нас также бесконечный цикл, но у которого определено завершающее действие -
+                    вывод `"Finished"`
+
+                    Во время исполнения `cancel` в этом примере:
+                    - мы дожидаемся окончания очередной итерации цикла
+                    - отменяем исполнение цикла
+                    - выполняем завершающее действие с выводом `"Finished!"`
+
+                    ---
+
+                    Встраивание обработки отмены и обеспечение гарантий, позволяет гораздо проще работать с отменой,
+                    чем с `Thread.interrupt`.
+
+                    `Thread.interrupt` выставляет флаг прерывания. Дальше уже задача потока периодически проверять
+                    себя на отмену. Например, он может очистить свои ресурсы и выкинуть `InterruptedException`.
+
+                    При таком подходе можно очень легко ошибиться, работа с отменой файберов гораздо проще.
+                    ---
+
+                    Мы можем размечать наши участки IO вычислений, как неотменяемые, через `IO.uncancelable`:
+
+                    ```scala [1-15]
+                    type Poll[F[_]] = F ~> F
+
+                    object IO {
+                      def uncancelable[A](body: Poll[IO] => IO[A]): IO[A]
+                    }
+                    ```
+
+                    ---
+
+                    В этом примере мы дождемся выполнения всего `fib` при отмене файбера:
+
+                    ```scala [1-15]
+                    def fib: IO[Unit] =
+                      IO.uncancelable { _ =>
+                        for {
+                          _ <- IO.println("Ping")
+                          _ <- IO.sleep(5.seconds)
+                          _ <- IO.println("Pong")
+                        } yield ()
+                      }
+
+                    def program: IO[Unit] =
+                      fib.start.flatMap(_.cancel.delayBy(1.second))
+
+                    // stdout: Ping
+                    // stdout: Pong (after 5 seconds)
+                    ```
+
+                    ---
+
+                    `Poll` позволяет нам разметить вычисления, на которых мы можем прервать наше вычисление:
+
+                    ```scala [1-15]
+                    def fib: IO[Unit] =
+                      IO.uncancelable { poll =>
+                        for {
+                          _ <- IO.println("Ping")
+                          _ <- poll(IO.sleep(5.seconds))
+                          _ <- IO.println("Pong")
+                        } yield ()
+                      }
+
+                    def program: IO[Unit] =
+                      fib.start.flatMap(_.cancel.delayBy(1.second))
+
+                    // stdout: Ping
+                    ```
+
+                    ---
+
+                    С помощью применения `poll` мы смогли пометить, что ожидание `IO.sleep` отменяемое
+                    внутри блока.
+
+                    `Poll` помогает нам тонко настраивать участки кода, которые могут и не могут быть отменяемыми
+
+                    ---
+
+                    Операция `start` сама по себе отменяемая:
+
+                    ```scala [1-15]
+                    def program: IO[Unit] =
+                      IO.println("Ping").start.flatMap(_.cancel)
+                    ```
+
+                    Такой пример ничего не выведет в консоль
+
+                    ---
+
+                    Мы можем явно порождать дочерние вычисления с помощью комбинатора `IO.background`:
+
+                    ```scala [1-15]
+                    trait IO[+A] {
+                      def background: Resource[IO, IO[OutcomeIO[A]]] =
+                        Resource.make(start)(_.cancel).map(_.join)
+                    }
+                    ```
+
+                    ```scala [1-15]
+                    def program: IO[Unit] =
+                      IO.println("Ping").background.use { _ => IO.unit }
+                    ```
+
+                    Таким образом мы можем привязать исполнение и отмену дочернего файбера к основному
+                    ---
+
+                    Если происходит ошибка во время исполнения дочернего файбера, то будет происходить
+                    отмена дочерних с вызовом всех:
+
+                    ```scala [1-15]
+                    def program: IO[Unit] =
+                      IO
+                       .println("Ping").delayBy(10.seconds)
+                       .guaranteeCase {
+                         case Outcome.Succeeded(fa) => fa
+                         case Outcome.Errored(e) =>
+                          IO.println(s"Error: $e")
+                         case Outcome.Canceled() =>
+                          IO.println("Canceled")
+                       }
+                       .background
+                       .use { _ =>
+                         IO.raiseError(new RuntimeException("boom!"))
+                       }
+                    // stdout: Canceled
+                    ```
+
+                    ---
+
+                    Также будет происходить и отмена дочерних файберов, если произошла отмена основного:
+
+                    ```scala [1-15]
+                    def mainFiber: IO[Unit] =
+                      IO
+                       .println("Ping").delayBy(10.seconds)
+                       .guaranteeCase {
+                         case Outcome.Succeeded(fa) => fa
+                         case Outcome.Errored(e) =>
+                          IO.println(s"Error: $e")
+                         case Outcome.Canceled() =>
+                          IO.println("Canceled")
+                       }
+                       .background.use { _ => IO.unit }
+
+                    def program: IO[Unit] =
+                      mainFiber.start.flatMap(_.cancel.delayBy(1.second))
+                    // stdout: Canceled
+                    ```
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Гонки файберов
+
+                    Работа с голыми файберами - это достаточно низкоуровневая операция.
+
+                    С голыми файберами всегда возникает сложность с правильной отменой файберов, или правильным
+                    реагированием в случае возникновения ошибки
+
+                    ---
+
+                    Чтобы убрать эту сложность работы с файберами, мы можем добавить еще одну операцию -
+                    гонку между двумя IO вычислениями с помощью `IO.racePair`:
+
+                    ```scala [1-15]
+                    object IO {
+                      def racePair[A, B](
+                        left: IO[A],
+                        right: IO[B]
+                      ): IO[Either[(OutcomeIO[A], FiberIO[B]), (FiberIO[A], OutcomeIO[B])]]
+                    }
+                    ```
+
+                    ---
+
+                    Эта операция запускает два IO вычисления, у которого может быть 2 результата:
+
+                    - Первое вычисление выполнилось, второе еще выполняется
+                    - Первое вычисление еще выполняется, второе уже выполнилось
+
+                    На основе этого метода мы можем реализовать два комбинатора `IO.bothOutcome` и `IO.raceOutcome`
+
+                    ---
+
+                    `IO.bothOutcome` позволяет нам дождаться выполнение двух файберов:
+
+                    ```scala [1-15]
+                    object IO {
+                      def bothOutcome[A, B](
+                        left: IO[A],
+                        right: IO[B]
+                      ): IO[(OutcomeIO[A], OutcomeIO[B])]
+                    }
+                    ```
+
+                    При этом, если произойдет отмена всей гонки, то оба файбера будут отменены
+
+                    ---
+
+                    На основе `IO.bothOutcome` можно реализовать `IO.both`, который дожидается успешного
+                    выполнения двух вычислений:
+
+                    ```scala [1-15]
+                    object IO {
+                      def both[A, B](
+                        left: IO[A],
+                        right: IO[B]
+                      ): IO[(A, B)]
+                    }
+                    ```
+
+                    ---
+
+                    `IO.both` учитывает следующие случаи:
+
+                    - Если победитель гонки закончился успехом, то ждем выполнение проигравшего
+                    - Если победитель гонки закончился ошибкой, то происходит отмена проигравшего.
+                    Ошибка поднимается дальше
+                    - Если победитель гонки был отменен, то происходит отмена проигравшего и отмена самой гонки
+                    - ...
+
+                    ---
+
+                    - ...
+                    - Если проигравшей закончился успехом, то возвращается результат
+                    - Если проигравший закончился ошибкой, то ошибка поднимается дальше
+                    - Если проигравший гонки был отменен, то происходит  отмена гонки
+                    - Если происходит отмена всей гонки, то оба вычисления отменяются
+
+                    ---
+
+                    С помощью `IO.both` и `IO.bothOutcome` мы достигаем параллелизма вычислений:
+
+                    ```scala [1-15]
+                    def callServiceA: IO[Unit] = ???
+                    def callServiceB: IO[Unit] = ???
+
+                    def program: IO[Unit] =
+                      IO.both(
+                        callServiceA,
+                        callServiceB
+                      ).void
+                    ```
+
+                    ---
+
+                    `IO.raceOutcome` позволяет нам запускать гонку за одним из двух результатов:
+
+                    ```scala [1-15]
+                    object IO {
+                      def raceOutcome[A, B](
+                        left: IO[A],
+                        right: IO[B]
+                      ): IO[Either[OutcomeIO[A], OutcomeIO[B]]]
+                    }
+                    ```
+
+                    ---
+
+                    Победителем гонки считается то вычисление, которое первое вернуло результат.
+
+                    Проигравший гонки отменяется
+
+                    ---
+
+                    С помощью `IO.raceOutcome` можно реализовать простой интерфейс `IO.race`:
+
+                    ```scala [1-15]
+                    object IO {
+                      def race[A, B](
+                        left: IO[A],
+                        right: IO[B]
+                      ): IO[Either[A, B]]
+                    }
+                    ```
+
+                    `IO.race` возвращает первое успешно завершившееся вычисление
+                    ---
+
+                    `IO.race` учитывает следующие случаи:
+
+                    - Если победитель гонки закончился успехом, то отменяем проигравшего
+                    - Если победитель гонки закончился с ошибкой, то отменяем проигравшего. Ошибка
+                    поднимается дальше
+                    - Если победитель гонки закончился отменой, то возвращается результат проигравшего (
+                    по первым двум правилам)
+                    - Если оба участника гонки закончились отменой, то гонка отменяется
+
+                    ---
+
+                    Мы можем применять `IO.race`, когда у нас есть два одинаковых ресурса, но
+                    время доступа до них недетерминировано. При этом нам важно вернуть результат,
+                    как можно быстрее:
+
+                    ```scala [1-15]
+                    def callNodeAForService: IO[Data] = ???
+                    def callNodeBForService: IO[Data] = ???
+
+                    def callForService: IO[Data] =
+                      IO.race(
+                        callNodeAForService,
+                        callNodeBForService
+                      ).map(_.merge)
+                    ```
+
+                    ---
+
+                    Менее очевидное применение - реализация таймаутов на сервис:
+
+                    ```scala [1-15]
+                    import cats.syntax.option._
+
+                    def timeout[A](
+                      io: IO[A],
+                      limit: FiniteDuration
+                    ): IO[Option[A]] =
+                      IO.race(
+                        io.map(_.some)
+                        IO.sleep(limit).as(none[A])
+                      ).map(_.merge)
+                    ```
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Рантайм
+
+                    `cats-effect` рантайм состоит из 3 пуллов потоков:
+
+                    - `ScheduledExecutorService` - 1 высокоприоритетный поток, для откладываемых во времени
+                    операций (операций с таймерами)
+                    - Блокирующий пул потоков для блокирующих операций - неограниченный кэширующий пул
+                    - `CPU` пул для остальных операций
+
+                    ---
+
+                    `CPU` пул имеет свою кастомную реализацию, которая знает про существование файберов
+
+                    Он реализует алгоритм кражи работы, который позаимствовали из фреймворка `tokio` из
+                    языка программирования Rust
+
+                    ---
+
+                    Суть реализации - каждый поток имеет свою локальную очередь задач (работы)
+
+                    При этом есть глобальная очередь задач, из которой периодически потоки также берут задачи
+
+                    ---
+
+                    Каждый поток работает над своими локальными задачами, то есть если мы создаем
+                    дочерние файберы, то они вероятнее всего окажутся в локальной очереди.
+
+                    Это позволяет сохранять кэш процессора и не вымывать его при переключении файберов.
+
+                    ---
+
+                    Реализация каждого файбера представляет из себя рекурсию, где мы разбираем наше IO
+                    вычисление и выполняем каждый заложенный внутри шаг.
+
+                    ---
+
+                    Если мы достигаем семантической блокировки или асинхронного вызова,
+                    то мы останавливаем исполнение и передаем управление другому файберу. Таким образом,
+                    мы не тратим время на ожидание и занимаемся другой работой
+
+                    ---
+
+                    Если мы достигаем определенного лимита по итерациям, то мы также останавливаем исполнение и передаем
+                    управление другому файберу. Это необходимо для достижения честного исполнения файберов
+
+                    ---
+
+                    В отличии от `Future`, `IO.map` и `IO.flatMap` не приводят к переключению контекста и созданию
+                    новой задачи в тред пул.
+
+                    Вместо этого просто происходит их последовательное исполнение.
+
+                    ---
+
+                    ### Блокирующие операции
+
+                    Мы можем размечать синхронные блокирующие операции, чтобы они исполнялись на блокирующем
+                    пуле потоков:
+
+                    ```scala [1-15]
+                    object IO {
+                      def blocking[A](suspended: => A): IO[A]
+                      def interruptible[A](suspended: => A): IO[A]
+                      def interruptibleMany[A](suspended: => A): IO[A]
+                    }
+                    ```
+
+                    ---
+
+                    Все вычисления помеченные, как `IO.blocking`, будут неотменяемыми и будут исполняться строго
+                    на блокирующем пуле:
+
+                    ```scala [1-15]
+                    def callToDb: Unit = ???
+
+                    def program: IO[Unit] =
+                      for {
+                        _ <- IO.println("Executing query")
+                        _ <- IO.blocking(callToDb)
+                        _ <- IO.println("Executed query")
+                      } yield ()
+                    ```
+
+                    ---
+
+                    - Вывод "Executing query" и "Executed query" будут выполнены на основном потоке
+                    - Блокирующей вызов к БД будет выполнен на блокирующем пуле
+
+                    ---
+
+                    `IO.interruptible` и `IO.interruptibleMany` уже будут отменяемыми, путем вызова
+                    `Thread.interrupt` один или более раз
+
+                    ---
+
+                    Если нам по каким-то причинам нужно исполнить наше вычисление на другом пуле потоков,
+                    то для этого есть оператор `IO.evalOn`:
+
+                    ```scala [1-15]
+                    trait IO[+A] {
+                      def evalOn(ec: ExecutionContext): IO[A]
+                    }
+                    ```
+
+                    При этом достигается гарантия, что следующее вычисление будет исполнено на оригинальном
+                    (заданном) пуле потоков
+
+                </textarea>
+            </section>
+        </section>
+    </div>
+</div>
+
+
+</body>
+</html>

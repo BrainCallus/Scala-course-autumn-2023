@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <link href="/app/node_modules/reveal.js/dist/reveal.css" rel="stylesheet">
+    <title>Лекция 06 - Неявные параметры</title>
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <!--Intro-->
+        <section data-markdown>
+			<textarea data-template>
+				## Неявные параметры
+				Лекция 06
+            </textarea>
+        </section>
+
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Неявные аргументы
+                    ---
+
+                    Давайте определим отдельный интерфейс (трейт) для сложения:
+
+                    ```scala [1-3]
+                    trait Adder {
+                      def sum(i: Int, j: Int): Int
+                    }
+                    ```
+                    ---
+
+                    Мы можем определить несколько простых функций, используя `Adder`:
+
+                    ```scala [1-5|1-2|4-5]
+                    def increment(base: Int)(adder: Adder): Int =
+                      adder.sum(base, 1)
+
+                    def sum(a: Int, b: Int)(adder: Adder): Int =
+                      adder.sum(a, b)
+                    ```
+                    ---
+
+                    И давайте определим реализацию `Adder` и немного логики рядом:
+
+                    ```scala [1-5|1-2|4-5]
+                    // анонимное создание класса
+                    val adder: Adder = (a, b) => a + b
+
+                    val summed = sum(1, 2)(adder) // summed = 3
+                    val result = increment(summed)(adder) // result = 4
+                    ```
+                    ---
+                    - В целом, мы бы могли использовать эту дефолтную реализацию `Adder` в любом месте, где
+                    требуется инстанс трейта `Adder`
+                    - Тогда зачем каждый раз передавать ее функциям? Было бы _классно_ писать такой код:
+
+                    ```scala [1-5|4-5]
+                    // анонимное создание класса
+                    val adder: Adder = (a, b) => a + b
+
+                    val summed = sum(1, 2) // summed = 3
+                    val result = increment(summed) // result = 4
+                    ```
+
+                    ---
+
+                    - Ой, подождите. Scala имеет __неявные__ (__`implicits`__) конструкции, которые позволяют достичь
+                    желаемого поведения с автоматической подстановкой аргументов, и даже больше
+
+                    ---
+
+                    - Давайте начнем с аргументов функции
+                    - Чтобы передавать автоматически аргументы функции, мы должны явно обозначить такие аргументы
+                    для компилятора
+                    - Мы будем делать это с помощью ключевого слова __`implicit`__:
+
+                    ```scala [1-15]
+                    def increment(base: Int)(implicit adder: Adder): Int =
+                      adder.sum(base, 1)
+
+                    def sum(a: Int, b: Int)(implicit adder: Adder): Int =
+                      adder.sum(a, b)
+                    ```
+
+                    ---
+
+                    Теперь давайте подумаем - какие ограничения должны быть на использование таких аргументы?
+
+                    ---
+
+                    - Все __`implicit`__ (неявные) аргументы типов должны быть уникальными. Без какой-либо дубликации
+                    - Это позволяет исключить __неопределенность__ (__ambiguity__) во время подстановки неявных аргументов
+                    во время компиляции
+
+                    ```scala [1-8|3-6]
+                    // Не валидный синтаксис
+                    def incrementBad(base: Int)(implicit
+                      // Компилятор точно не знает,
+                      // какой инстанс Adder, куда подставить
+                      adderOne: Adder,
+                      adderTwo: Adder
+                    ): Int =
+                    adder.sum(base, 1)
+                    ```
+
+                    ---
+
+                    Только последний список аргументов может быть __неявным__ (__`implicit`__):
+
+                    ```scala [1-5]
+                    // Не валидный синтаксис
+                    def incrementBad(base: Int)
+                      (implicit multiplier: Multiplier)
+                      (implicit adder: Adder): Int =
+                      adder.sum(base, 1)
+                    ```
+                    ---
+
+                    - Лучше переписать "плохой" пример
+                    - Давайте сделаем один список неявных аргументов:
+
+                    ```scala [1-4|2-3]
+                    def incrementGood(base: Int)(implicit
+                      adder: Adder,
+                      multiplier: Multiplier
+                    ): Int = adder.sum(base, 1)
+                    ```
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    - Окей. Мы знаем, что функции теперь могут принимать __неявные__ аргументы
+                    - Как мы можем тогда передавать __неявные__ аргументы?
+
+                    ---
+
+                    - Простой ответ - можно опять использовать ключевое слово __`implicit`__
+
+                    ---
+                    ### Неявные значения
+
+                    - Значения могут быть __неявными__ (__`implicit`__)
+                    - Это говорит о том, что такие __неявные__ значения, которые относятся
+                    к какой-то __неявной__ области видимости,
+                    могут быть автоматически подставлены, как __неявные__ аргументы
+
+                    ---
+
+                    - Давайте вернемся к предыдущему примеру и перепишем его,
+                    используя корректный Scala синтаксис:
+
+                    ```scala [1-10|1-5|7|9-10]
+                    def sum(a: Int, b: Int)(implicit adder: Adder): Int =
+                      adder.sum(a, b)
+
+                    def increment(a: Int)(implicit adder: Adder): Int =
+                      adder.sum(a, 1)
+
+                    implicit val adder: Adder = (a, b) => a + b
+
+                    val summed = sum(1, 2) // summed = 3
+                    val result = increment(summed) // result = 4
+                    ```
+
+                    ---
+
+                    - Эти __неявные__ значения все еще ведут себя, как обычные значения:
+
+                    ```scala [1-3]
+                    implicit val adder: Adder = (a, b) => a + b
+
+                    val result = adder.sum(1, 2)
+                    ```
+
+                    ---
+
+                    - Эти __неявные__ значения можно также передавать __явно__ (__explicitly__), как аргументы:
+
+                    ```scala [1-4|3-4]
+                    implicit val adder: Adder = (a, b) => a + b
+
+                    val summed = sum(1, 2)(adder) // summed = 3
+                    val result = increment(summed)(adder) // result = 4
+                    ```
+
+                    ---
+
+                    ### Неявные области видимости
+
+                    ---
+
+                    ### Локальная область видимости
+
+                    - Функции с __неявными__ аргументами могут быть вызваны в той же области видимости,
+                    где определены __неявные__ значения
+
+                    ---
+
+                    Пример:
+                    ```scala [1-12|1-2|5|6|8|12]
+                    def increment(a: Int)(implicit adder: Adder): Int =
+                      adder.sum(a, 1)
+
+                    {
+                      implicit val adder: Adder = (a, b) => a + b
+                      val one = increment(0) // `adder` доступен
+                      {
+                        val two = increment(1) // `adder` доступен
+                      }
+                    }
+
+                    val three = increment(2) // `adder` не доступен, не скомпилируется
+                    ```
+
+                    ---
+                    - Локальная область видимости не может иметь несколько __`implicit`__ значений
+                    одного типа
+                    - Компилятор будет падать из-за __неопределенности__ (__ambiguity__)
+
+                    ```scala [1-7]
+                    {
+                      implicit val adder: Adder = (a, b) => a + b
+                      implicit val specialAdder: Adder = (a, b) => a + b + 1
+                      // множество неявных значений типа Adder в области, ошибка компиляции
+                      val one = increment(0)
+                    }
+                    ```
+                    ---
+
+                    ### Импортированная область видимости
+
+                    - Мы можем определить __неявные__ значения в _объектах_ и импортировать
+                    значения в нужном месте через подчеркивание __`_`__
+
+                    ---
+
+                    Пример
+
+                    ```scala [1-3]
+                    object Adders {
+                      implicit val adder: Adder = (a, b) => a + b
+                    }
+                    ```
+                    ---
+
+                    ```scala [1-12|1-2|5|6|8|12]
+                    def increment(a: Int)(implicit adder: Adder): Int =
+                      adder.sum(a, 1)
+
+                    {
+                      import Adders._ // import Adders.adder тоже работает
+                      val one = increment(0) // `adder` доступен
+                      {
+                        val two = increment(1) // `adder` доступен
+                      }
+                    }
+
+                    val three = increment(2) // `adder` не доступен
+                    ```
+
+                    ---
+
+                    ### Область видимости объекта компаньона
+
+                    Или глобальная область видимости
+
+                    ---
+                    - Если мы определим __неявное__ значение типа в его объект компаньон этого типа,
+                    то __неявное__ значение будет доступно везде
+                    - Нет необходимости в импортах
+
+                    ---
+
+                    Example
+                    ```scala [1-7]
+                    trait Adder {
+                      def sum(i: Int, j: Int): Int
+                    }
+
+                    object Adder {
+                      implicit val adder: Adder = (a, b) => a + b
+                    }
+                    ```
+
+                    ---
+
+                    Пример:
+                    ```scala [1-11|5|7|11]
+                    def increment(a: Int)(implicit adder: Adder): Int =
+                      adder.sum(a, 1)
+
+                    {
+                      val one = increment(0) //  `adder` доступен
+                      {
+                        val two = increment(1) // `adder` доступен
+                      }
+                    }
+
+                    val three = increment(2) // `adder` доступен
+                    ```
+
+                    ---
+                    ### Порядок определения областей видимости
+
+                    - Все три области видимости могут сосуществовать вместе друг с другом
+                    - Компилятор ищет __неявные__ значения в таком порядке:
+
+                    1. Локальная область видимости
+                    2. Импортированная область видимости
+                    3. Область видимости объекта компаньона
+
+                    ---
+
+                    Пример:
+
+                    ```scala [1-13|5,8,10,11|10|13]
+                    trait Adder {
+                      def sum(a: Int, b: Int): Int
+                    }
+                    object Adder {
+                      implicit val adder: Adder = (a, b) => a + b
+                    }
+                    object Adders {
+                      implicit val defaultAdder: Adder = (a, b) => a + b
+                    }
+                    implicit val localAdder: Adder = (a, b) => a + b
+
+                    increment(1) // Будет использован `localAdder`
+                    ```
+
+                    ---
+
+                    - Если заменить __неявное__ значение `localAdder` на импортированное, то
+                    будет использован импортированный
+                    - Импортированный __неявные__ значения и локальные не могут существовать
+                    вместе
+
+                    ```scala [1-12|5,8,10|8,10|12]
+                    trait Adder {
+                      def sum(a: Int, b: Int): Int = a + b
+                    }
+                    object Adder {
+                      implicit val adder: Adder = (a, b) => a + b
+                    }
+                    object Adders {
+                      implicit val defaultAdder: Adder = (a, b) => a + b
+                    }
+                    import Adders._
+
+                    increment(1) // Будет использован `defaultAdder`
+                    ```
+
+                    ---
+
+                    - Если убрать импортирование __неявного__ значения, то будет производиться поиск
+                    в области видимости объекта компаньона:
+
+                    ```scala [1-11|5,8|5|11]
+                    trait Adder {
+                      def sum(a: Int, b: Int): Int = a + b
+                    }
+                    object Adder {
+                      implicit val adder: Adder = (a, b) => a + b
+                    }
+                    object Adders {
+                      implicit val defaultAdder: Adder = (a, b) => a + b
+                    }
+
+                    increment(1) // Будет использован `adder`
+                    ```
+                    ---
+
+                    ### Призыв
+
+                    Давайте посмотрим на вот такую функцию:
+
+                    ```scala [1-2]
+                    def implicitly[T](implicit value: T): T =
+                      value
+                    ```
+
+                    ---
+                    - Эта функция ищет __неявное__ значение какого-то типа в области видимости и возвращает
+                    его
+                    - Эта функция - часть `Scala.Predef` (стандартной библиотеки)
+
+                    ```scala [1]
+                    val result = implicitly[Adder].sum(1, 2) // result = 3
+                    ```
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Неявные функции
+
+                    В Scala, у нас есть не только __неявные__ значения и аргументы, но
+                    есть еще и __неявные__ функции.
+
+                    ---
+                    ### Неявные вывод значений
+
+                    Мы можем создавать или _выводить_ __неявные__ значения из других __неявных__
+                    значений
+
+                    ---
+
+                    - Давайте определим трейт __`ShowInt`__, который позволит нам преобразовывать
+                    `Int` в `String`
+
+                    ```scala [1-7]
+                    trait ShowInt {
+                      def show(a: Int): String
+                    }
+
+                    object ShowInt {
+                      implicit val showInt: ShowInt = a => a.toString
+                    }
+                    ```
+                    ---
+
+                    - Такой трейт определим для BigDecimal
+
+                    ```scala [1-7]
+                    trait ShowBigDecimal {
+                      def show(a: BigDecimal): String
+                    }
+                    object ShowBigDecimal {
+                      implicit val showBigDecimal: ShowBigDecimal =
+                        a => a.toString
+                    }
+                    ```
+
+                    ---
+
+                    - А теперь давайте определим трейт `ShowPerson` для класса `Person`
+
+                    ```scala [1-15]
+                    class Person(
+                      val name: String,
+                      val age: Int,
+                      val money: BigDecimal
+                    )
+
+                    trait ShowPerson {
+                      def show(a: Person): String
+                    }
+                    ```
+                    ---
+                    ```scala [1-15]
+                    object ShowPerson {
+                      implicit def showPerson(implicit
+                        showInt: ShowInt,
+                        showBigDecimal: ShowBigDecimal
+                      ): ShowPerson = { person =>
+                        val name = person.name
+                        val age = showInt.show(person.age)
+                        val money = showBigDecimal.show(person.money)
+                          s"Person($name, $age, $money)"
+                      }
+                    }
+                    ```
+                    ---
+
+                    - Мы использовали __неявные__ значения для типов `ShowInt` и `ShowBigDecimal`,
+                    чтобы определить __неявное__ значение для типа `ShowPerson`
+
+                    - Другими словами, мы вывели __неявное__ значение для `ShowPerson`
+
+                    ---
+                    - Из-за того, что мы имеем глобальные __неявные__ значения для `ShowInt` and `ShowBigDecimal`,
+                    мы можем спокойно призвать `ShowPerson` в любом месте:
+
+                    ```scala [1-3]
+                    val person = new Person("Ivan", 23, -1,5)
+                    println(implicitly[ShowPerson].show(person))
+                    // sys.out = Person(Ivan, 23, -1,5)
+                    ```
+                    ---
+
+                    - Теперь давайте разберем такой же пример, но уже с абстрактным параметром:
+
+                    ```scala [1-15]
+                    trait Show[-T] {
+                      def show(value: T): String
+                    }
+
+                    object Show {
+                      implicit val showString: Show[String] = a => a
+                      implicit val showInt: Show[Int] = _.toString
+                      implicit val showBigDecimal: Show[BigDecimal] = _.toString
+                    }
+                    ```
+                    ---
+
+                    ```scala [1-15]
+                    case class Person[T](
+                      name: String,
+                      age: Int,
+                      money: String
+                      body: T
+                    )
+                    object Person {
+                      implicit def deriveShow[T](implicit showBody: Show[T]): Show[Person[T]] = { p =>
+                        val nameStr  = implicitly[Show[String]].show(p.name)
+                        val ageStr   = implicitly[Show[Int]].show(p.age)
+                        val moneyStr = implicitly[Show[BigDecimal]].show(p.money)
+                        val bodyStr  = showBody.show(p.body)
+
+                        s"Person($nameStr, $ageStr, $moneyStr, $bodyStr)"
+                      }
+                    }
+                    ```
+
+                    ---
+
+                    - Чтобы работал вывод, для `body` должно быть доступно неявное значение `Show`:
+
+                    ```scala [1-15]
+                    val person = Person[String]("Ivan", 23, -1,5, "body")
+                    println(implicitly[Show[Person[String]]].show(person))
+                    // sys.out = Person(Ivan, 23, -1,5, "body")
+                    ```
+
+                    ---
+
+                    - Для __неявных__ аргументов также существует специальный синтаксис,
+                    который позволяет определять _ограничение_ на тип
+                    - Такой синтаксис называется `context bound`:
+
+                    ---
+
+                    ```scala [1-15]
+                    case class Wrapper[T](
+                      value: T
+                    )
+                    object Person {
+                      implicit def deriveShow[T: Show]: Show[Wrapper] = { v =>
+                        // для T есть неявное значение Show[T]
+                        implicitly[Show[T]].show(v.value)
+                      }
+                    }
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    val wrapper = Wrapper("String")
+                    println(implicitly[Show[Wrapper[String]]].show(person))
+                    // sys.out = "String"
+                    ```
+
+                    ---
+
+                    ### Неявные конвертации
+
+                    ---
+
+                    - Если мы определим __неявную__ функцию с одним явным аргументом,
+                    то такая функция будет работать, как функция конвертации
+
+                    ```scala [1-5]
+                    implicit def intToString(i: Int): String = i.toString
+
+                    val i: Int = 1
+                    // неявное применение функции intToString
+                    val str: String = i
+                    ```
+
+                    ---
+
+                    Это будет равно вот такому "явному" поведению:
+
+                    ```scala [1-2]
+                    val i: Int = 1
+                    val str: String = intToString(i)
+                    ```
+
+                    ---
+
+                    - Мы не может определить __неявную__ функцию с больше чем одним явным аргументом
+
+                    ---
+
+                    - Такие функции конвертации также могут быть рассмотрены, как __неявное__ значение
+                    типа функции
+
+                    ```scala [1-6|1|3|6]
+                    implicit def intToString(i: Int): String = i.toString
+
+                    def print(i: Int)(implicit convert: Int => String): Unit =
+                      println(convert(i))
+
+                    print(1) // sys.out = 1
+                    ```
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Неявные классы
+
+                    или расширение синтаксиса
+
+                    ---
+
+                    - Мы можем определять дополнительные методы (__extension__ методы) к
+                    любым существующим типам с помощью __неявных__ классов (__`implicit`__ classes)
+
+                    ---
+
+                    - Давайте посмотрим на такой пример: мы хотим определить метод для явной конвертации
+                    `Int` в `WeekDay`:
+
+                    ```scala [1-15]
+                    sealed trait WeekDay
+                    object WeekDay {
+                    case object Working extends WeekDay
+                    case object Resting extends WeekDay
+
+                    def fromInt(i: Int): Option[WeekDay] =
+                      i match {
+                        case x if 1 <= x && x <= 5 => Some(Working)
+                        case x if 6 <= x && x <= 7 => Some(Resting)
+                        case _ => None
+                      }
+                    }
+                    ```
+
+                    ---
+
+                    - Использование такого метода _немного_ подробное
+                    - Давайте сделаем его более лаконичным
+
+                    ```scala [1]
+                    val result = WeedDay.fromInt(1)
+                    ```
+
+                    ---
+
+                    - Давайте определим __неявный__ класс с новым методом `toWeekDay`:
+
+                    ```scala [1-15]
+                    implicit class IntWeekDayOps(val i: Int)
+                      extends AnyVal {
+
+                      def toWeekDay: Option[WeekDay] =
+                        WeekDay.fromInt(i)
+                    }
+                    ```
+
+                    ---
+                    - Теперь, если __неявный__ класс находится в неявной области видимости,
+                    то мы сможем использовать метод `toWeekDay` на значениях типа `Int`:
+
+                    ```scala [1-3]
+                    val monday: Int = 1
+                    val one = monday.toWeekDay // one = Some(Working)
+                    val two = 0.toWeekDay      // two = None
+                    ```
+
+                    ---
+
+                    - __неявные__ классы реализованы через __неявную__ конверсию и обычный класс.
+                    - То есть оно является синтаксическим сахаром над этим:
+
+                    ```scala [1-15]
+                    class IntWeekDayOps(val i: Int) {
+                      def toWeekDay: Option[WeekDay] = WeekDay.from(i)
+                    }
+
+                    implicit def IntWeekDayOpsDerive(i: Int): IntWeekDayOps =
+                      new IntWeekDayOps(i)
+                    ```
+
+                    ---
+
+                    Зная это, какие есть ограничения на определение __неявных__ классов?
+
+                    ---
+
+                    - Можно использовать только один явный аргумент в конструкторе класс из-за особенностей
+                    __неявных__ функций
+                    - Должен быть определен внутри `object` / `class` / `trait`. `def` не позволяет использовать
+                    определения высшего типа
+
+                    ---
+
+                    - Стандартная библиотека имеет хороший пример использования таких __неявных__ классов:
+                    лаконичное создание периодов:
+
+                    ```scala [1-4|3-4]
+                    import scala.concurrent.duration._
+
+                    val sec: FiniteDuration = 1.second
+                    val hour: FiniteDuration = 1.hour
+                    ```
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Неявные подтверждения отношения типов
+                    ---
+
+                    Помимо ограничений типов, в Scala есть специальные типа, которые выражают сабтайпинг и
+                    равенство типов:
+
+                    ```scala [1-15]
+                    sealed abstract class <:<[-From, +To] extends (From => To)
+                    sealed abstract class =:=[From, To] extends (From <:< To) {
+                      def flip: To =:= From
+                    }
+                    ```
+
+                    Эти типы несут в себе информацию об отношении сабтайпинга между типами
+                    ---
+                    Оба типа: `<:<` и `=:=` - типы синглтоны, и они оба имеют только одно рантайм значение:
+
+                    ```scala [1-15]
+                    object <:< {
+                      private val singleton: =:=[Any, Any] = new (Any =:= Any) {
+                        override def apply(x: Any) = x
+                      }
+                      implicit def refl[A]: A =:= A =
+                        singleton.asInstanceOf[A =:= A]
+
+                      def antisymm[A, B](implicit
+                        l: A <:< B,
+                        r: B <:< A
+                      ): A =:= B = singleton.asInstanceOf[A =:= B]
+                    }
+                    ```
+
+                    Этот пример использует unsafe кастинг типов, но этот тип доказуемо корректный
+
+                    ---
+
+                    - Подтверждения сабтайпинга типов часто используются в местах, где ограничения типов невозможные.
+                    - Например, в методах генерализированных типов:
+
+                    ```scala [1-15]
+                    sealed trait Option[+T] {
+                      def flatten[B](implicit ev: T <:< Option[B]): Option[B] =
+                        if (isEmpty) None else ev(this.get)
+                    }
+                    ```
+
+                    - `flatten` может быть вызван только в случе `Option[Option[B]]`, но, он определен для любого `T`
+
+
+                    ---
+
+                    ## Вопросы?
+                </textarea>
+            </section>
+        </section>
+    </div>
+</div>
+
+<script src="/main.js" type="module"></script>
+</body>
+</html>

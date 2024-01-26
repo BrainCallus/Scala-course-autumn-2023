@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="/app/node_modules/reveal.js/dist/reveal.css">
+    <title>Лекция 08 - Функциональное программирование - Часть 2</title>
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <!--Intro-->
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Функциональное программирование
+                    ### Часть 2
+
+                    Лекция 08
+
+                    ---
+
+                    ### Содержание
+
+                    - `F[_]` и другие конструкторы типов
+                    - `FunctionK`
+                    - Тайпклассы: `Functor`, `Apply` & `Applicative`, `FlatMap` & `Monad`
+
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    Давайте вспомним про простые параметры типов на примере `foldLeft`:
+
+                    ```scala [1-3]
+                    // параметр типа - `B` - аккумулятор
+                    // параметр типа - `T` - элемент коллекции
+                    def foldLeft[B, T](list: List[T])(acc: B)(f: (B, T) => B): B = ???
+
+                    ```
+
+                    ---
+
+                    Такие параметры типов обозначают какой-то абстрактный тип
+
+                    Что если бы параметр типа обозначал бы функцию от любого принимаемого типа?
+
+                    ---
+
+                    Scala позволяет работать с такими параметрами типов:
+
+                    ```scala [1-5]
+                    // параметр типа `F[_]` - абстрактная коллекция
+                    // параметр типа - `B` - аккумулятор
+                    // параметр типа - `T` - элемент коллекции
+                    def foldLeftCollection[F[_], B, T](collection: F[T])
+                      (acc: B)(f: (B, T) => B): B = ???
+                    ```
+
+                    ---
+
+                    - `F[_]` - это конструктор типов
+                    - Если мы применим `F[_]` к каким-то типам `A`, `B`, `C`, то мы можем получить 3 новых
+                    типа: `F[A]`, `F[B]`, `F[C]`
+
+                    ---
+
+                    - Мы можем представить `F[_]`, как функцию:
+                      - __`Type -> Type`__
+                      - __`* -> *`__
+
+                    - Обычный параметр типа `T` при такой нотации будет просто константой:
+                      - __`Type`__, or
+                      - __`*`__
+
+                    ---
+
+                    - Такая нотация называется __`каиндом`__,
+                    - Такой полиморфизм - _полиморфизмом высшего порядка_
+                    - А такие тайп параметры - _параметрами типов высшего порядка_
+                    - Каинды могут иметь разные формы
+
+                    ---
+
+                    ```scala [1-3]
+                    trait Show[-T] {
+                      def show(t: T): String
+                    }
+                    ```
+
+                    Трейт `Show` имеет каинд формы: __`Type -> Type`__, поэтому он может быть
+                    использован в качестве `F[_]` параметра
+
+                    ---
+
+                    Пример:
+
+                    ```scala [1-7]
+                    trait Name[F[_]] {
+                      def name: String
+                    }
+
+                    val instance: Name[Show] = new Name[Show] {
+                      def name: String = "Show"
+                    }
+                    ```
+
+                    ---
+
+                    Мы можем даже использовать переданный тип, с помощью `Id`:
+
+                    ```scala [1-15]
+                    type Id[A] = A
+
+                    val instance: Name[Id] = new Name[Id] {
+                      def name: String = "Id"
+                    }
+                    ```
+
+                    ---
+
+                    ```scala [1-15]
+                    trait Foo[F[_]] {
+                      def pure[A](a: A): F[A]
+                    }
+
+                    val instance: Foo[Id] = new Foo[Id] {
+                      def pure[A](a: A): A = a
+                    }
+
+                    ```
+
+                    ---
+
+                    Какой трейт будет иметь вот такой каинд?
+
+                    __`Type -> Type -> Type`__
+
+                    ---
+
+                    Ответ:
+                    ```scala [1]
+                    trait Foo[A, B]
+                    ```
+
+                    ---
+
+                    Какой трейт будет иметь вот такой каинд?
+
+                    __`(Type -> Type) -> Type`__
+                    ---
+
+                    Ответ:
+
+                    ```scala [1]
+                    trait Foo[F[_]]
+                    ```
+                    ---
+
+                    Какой трейт будет иметь вот такой каинд?
+
+                    __`(Type -> Type -> Type) -> Type`__
+
+                    ---
+
+                    Ответ:
+                    ```scala [1]
+                    trait Foo[F[_, _]]
+                    ```
+
+                    ---
+
+                    Какой каинд у такого трейта?
+
+                    ```scala [1]
+                    trait Foo[A, F[_], B]
+                    ```
+
+                    ---
+
+                    Ответ:
+
+                    __`Type -> (Type -> Type) -> Type -> Type`__
+
+                    ---
+
+                    Какой каинд у такого трейта?
+
+                    ```scala [1]
+                    trait Foo[M[_[_]]]
+                    ```
+
+                    ---
+
+                    Ответ:
+
+                    __`((Type -> Type) -> Type) -> Type`__
+
+                    ---
+
+                    ## kind-projector
+
+                    Плагин для компилятора для более удобной работы с каиндами
+
+                    Поставляется вместе с компилятором для Scala 3
+
+                    ---
+
+                    Он решает проблему конвертации каинда одной формы в другую более специфичную форму:
+
+                    ```scala [1-5]
+                    def foo[F[_]] = ???
+
+                    // Нам нужен специальный алиас типа, чтобы использовать `Either` в качестве `F[_]`
+                    type EitherThrow[A] = Either[Throwable, A]
+                    foo[EitherThrow]
+                    ```
+
+                    ---
+
+                    Плагин `kind-projector` добавляет новый синтаксис для работы с анонимным алиасами типов:
+
+                    ```scala [1-5]
+                    def foo[F[_]]: ???
+
+                    // Специальный синтаксис `*`
+                    foo[Either[Throwable, *]]
+                    foo[Either[Exception, *]]
+                    ```
+
+                    ---
+
+                    ```scala [1-5]
+                    trait Foo[F[_], Other]
+
+                    def bar[F[_]: Foo[*[_], String]]
+
+                    bar[Foo[Option, *]]
+                    ```
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## FunctionK
+
+                    Функция трансформации между любыми `F[_]` и `G[_]`
+
+                    ---
+
+                    Давайте вспомним определение обычной функции:
+
+                    ```scala [1-15]
+                    trait Function1[-T, +R] {
+                      def apply(t: T): R
+                    }
+                    ```
+
+                    ---
+
+                    `FunctionK` - это тоже самое определение функции, но для параметров типов `F[_]` и `G[_]`
+
+                    Объявление (часть библиотеки `cats-core`):
+
+                    ```scala [1-5]
+                    package cats
+
+                    trait FunctionK[F[_], G[_]] {
+                      def apply[A](fa: F[A]): G[A]
+                    }
+                    ```
+
+                    ---
+
+                    С помощью этой функции мы можем объявлять вот такие трансформации:
+
+                    ```scala [1-8]
+                    val listToVector: FunctionK[List, Vector] =
+                      new FunctionK[List, Vector] {
+                        def apply[A](fa: List[A]): Vector[A] =
+                          fa.toVector
+                      }
+
+                    val list: List[Int]     = List(1, 2, 3, 4)
+                    val vector: Vector[Int] = listToVector(list)
+                    ```
+
+                    ---
+
+                    `FunctionK` - слишком подробный, поэтому есть специальный синтаксический алиас типа `~>`:
+
+                    ```scala [1-8]
+                    import cats.~>
+
+                    val listToVector: List ~> Vector =
+                      new ~>[List, Vector] {
+                        def apply[A](fa: List[A]): Vector[A] =
+                          fa.toVector
+                      }
+                    ```
+
+                    ---
+
+                    Так как это функция, то мы можем их спокойно композировать
+
+                    ```scala [1-4]
+                    def compose[F[_], G[_], H[_]](f: F ~> G, g: G ~> H): F ~> H =
+                      new ~>[F, H] {
+                        def apply[A](fa: F[A]): H[A] = g(f(fa))
+                      }
+                    ```
+
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    `F[_]` и его производные позволяют нам использовать тайпклассы высшего
+                    порядка.
+
+                    Наиболее известная в функциональном программировании иерархия тайпклассов
+                    высшего порядка: `Functor`, `Applicative` и `Monad`
+
+                    ---
+
+                    Эти тайпклассы позволяют нам абстрагированно работать с разными коллекциями и вычислениями
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Functor
+
+                    ```scala [1-3]
+                    trait Functor[F[_]] {
+                      def map[A, B](fa: F[A])(f: A => B): F[B]
+                    }
+                    ```
+
+                    ---
+
+                    - `Functor` - тайпкласс высшего порядка
+                    - Позволяет изменить тип внутри контекста `F[_]` используя чистые функции
+
+                    ---
+
+                    Examples
+
+                    ```scala [1-15]
+                    import cats.Functor
+
+                    val listInt: List[Int] = List(1, 2, 3)
+                    val listString: List[String] =
+                      Functor[List].map(listInt)(_.toString)
+                    // listString: List("1", "2", "3")
+
+                    val optionInt: Option[Int] = Some(1)
+                    val optionDouble: Option[Double] =
+                      Functor[Option].map(optionInt)(_.toDouble)
+
+                    // optionDouble: Some(1.0)
+                    ```
+
+                    ---
+
+                    Также `Functor` можно рассмотреть, как некую функцию `lift` для чистой функции `A => B`
+                    в функцию в контексте `F[_]`: `F[A] => F[B]`
+
+                    ```scala [1-6]
+                    trait Functor[F[_]] {
+                      def map[A, B](fa: F[A])(f: A => B): F[B]
+
+                      def lift[A, B](f: A => B): F[A] => F[B] =
+                        fa => map(fa)(f)
+                    }
+                    ```
+
+                    ---
+
+                    ### Законы
+
+                    Закон идентичности:
+
+                    ```scala [1-15]
+                    fa.map(x => x) = fa
+                    ```
+
+                    Применение функции `identity` ничего не меняет
+
+                    ---
+
+                    Закон композиции:
+
+                    ```scala [1-15]
+                    fa.map(f).map(g) = fa.map(f.andThen(g))
+                    ```
+
+                    Маппинг с фукнцией `f`, а затем с функцией `g` должен быть эквиваленте маппингу
+                    по композиции функций `f` и `g`
+
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Apply & Applicative
+
+                    ---
+
+                    ## Apply
+
+                    ```scala [1-10,2,4-5]
+                    trait Apply[F[_]] extends Functor[F] {
+                      def ap[A, B](ff: F[A => B])(fa: F[A]): F[B]
+
+                      def product[A, B](fa: F[A], fb: F[B]): F[(A, B)] =
+                        ap(map(fa)(a => (b: B) => (a, b)))(fb)
+                    }
+                    ```
+                    ---
+
+                    - Позволяет композировать независимые вычисления в контексте `F[_]`
+                    - Независимым вычислениям не нужны результаты друг друга, чтобы получить итоговый результат
+
+                    ---
+
+                    Примеры
+
+                    ```scala [1-15]
+                    val someF: Option[Int => Long] = Some(_.toLong + 1L)
+                    val noneF: Option[Int => Long] = None
+                    val someInt: Option[Int] = Some(3)
+                    val noneInt: Option[Int] = None
+
+                    val res0 = Apply[Option].ap(someF)(someInt)
+                    // res0: Option[Long] = Some(4)
+                    val res1 = Apply[Option].ap(noneF)(someInt)
+                    //  res1: Option[Long] = None
+                    val res2 = Apply[Option].ap(someF)(noneInt)
+                    // res2: Option[Long] = None
+                    val res3 = Apply[Option].ap(noneF)(noneInt)
+                    // res3: Option[Long] = None
+                    ```
+
+                    ---
+
+                    Наследуется от `Functor`, поэтому имеет метод `map`
+
+                    ```scala [1-3]
+                    val someInt: Option[Int] = Some(3)
+
+                    val res: Option[Long] = Apply[Option].map(someInt)(_.toLong)
+                    ```
+
+                    ---
+
+                    ### Applicative
+
+                    ```scala [1-10]
+                    trait Applicative[F[_]] extends Apply[F] {
+                      def pure[A](a: A): F[A]
+
+                      def map[A, B](fa: F[A])(f: A => B): F[B] =
+                        ap(pure(f))(fa)
+                    }
+                    ```
+
+                    ---
+
+                    - Добавляет функцию `pure` к `Apply`
+                    - Позволяет поднять любое значение `A` в контекст `F[_]`
+                    - С помощью `pure` получаем автоматическую реализацию метода `map`
+
+                    ---
+
+                    Примеры
+
+                    ```scala [1-15]
+                    val res0 = Applicative[Option].pure(10)
+                    // res0: Option[Int] = Some(10)
+                    ```
+
+                </textarea>
+            </section>
+        </section>
+
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## FlatMap & Monad
+
+                    ---
+
+                    ## FlatMap
+
+                    ```scala [1-15]
+                    trait FlatMap[F[_]] extends Apply[F] {
+                      def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
+
+                      def ap[A, B](ff: F[A => B])(fa: F[A]): F[B] =
+                        flatMap(ff)(f => map(fa)(f))
+                    }
+                    ```
+
+                    ---
+
+                    - Дает операцию `flatMap`
+                    - Позволяет делать зависимые вычисления, то есть вычисления, которые зависят от результата
+                    выполнения предыдущего вычисления
+                    ---
+
+                    ```scala [1-15]
+                    import cats.syntax.option._
+
+                    def parseInt(in: String): Option[Int] =
+                      Either.catchNonFatal(in.toInt).toOption
+
+                    val stringOpt: Option[String] = Some("3")
+
+                    val res: Option[Int] =
+                      FlatMap[Option].flatMap(stringOpt)(parseInt)
+                    ```
+
+                    ---
+
+                    ## Monad
+
+                    ```scala [1-15]
+                    trait Monad[F[_]] extends FlatMap[F] with Applicative[F] {
+                      def pure[A](a: A): F[A]
+
+                      def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
+
+                      def ap[A, B](ff: F[A => B])(fa: F[A]): F[B] =
+                        flatMap(ff)(f => map(fa)(f))
+
+                      def map[A, B](fa: F[A])(f: A => B): F[B] =
+                        flatMap(fa)(a => pure(f(a)))
+                    }
+                    ```
+
+                    ---
+
+                    ## TailRecM
+
+                    ```scala [1-15]
+                    trait Monad[F[_]] {
+                      ...
+                      def tailRecM[A, B](a: A)(f: A => F[Either[A, B]]): F[B]
+                    }
+                    ```
+
+                    ---
+
+                    `Monad` в библиотеке `cats-core` имеет у себя в определении специальный метод `tailRecM`,
+                    реализация которого позволяет работать стекобезопасно с рекурсивными монаидическими операциями
+
+                    ---
+
+                    ```scala [1-15]
+                    implicit val optionMonad: Monad[Option] =
+                      new Monad[Option] {
+                        def flatMap[A, B](fa: Option[A])(f: A => Option[B]): Option[B] =
+                          fa.flatMap(f)
+
+                        def pure[A](a: A): F[A] = Some(a)
+
+                        @tailrec
+                        def tailRecM[A, B](a: A)(f: A => Option[Either[A, B]]): Option[B] =
+                          f(a) match {
+                            case None              => None
+                            case Some(Left(nextA)) => tailRecM(nextA)(f) // continue the recursion
+                            case Some(Right(b))    => Some(b)            // recursion done
+                          }
+                      }
+                    ```
+
+                    ---
+
+                    Является ли `loop` стеко-безопасным?
+
+                    ```scala [1-15]
+                    import cats.Monad
+                    import cats.syntax.applicative._
+                    import cats.syntax.flatMap._
+                    import cats.syntax.functor._
+
+                    def loop[F[_]: Monad](in: Long): F[Long] = {
+                      if (in < 1)
+                        0L.pure[F]
+                      else
+                        in.pure[F].flatMap(i =>
+                          loop(i - 1).map(_ + i)
+                        )
+                    }
+                    ```
+
+                    ---
+
+                    Зависит от того, что передаем в качестве `F[_]`:
+
+                    ```scala [1-15]
+                    // Упадет со StackOverflow
+                    println(loop[Option](1_000_000_000L))
+                    ```
+
+                    ---
+
+                    А что если попробовать другой тип, который будет стеко-безопасным?
+
+                    ---
+
+                    ### Eval
+
+                    `cats-core` имеет удобный тип для работы с ленивыми вычислениями
+
+                    ```scala [1-15]
+                    import cats.Eval
+
+                    def factorial(n: BigDecimal): Eval[BigDecimal] =
+                      if (n > 1)
+                        Eval.defer(factorial(n - 1).map(_ * n))
+                      else
+                        Eval.now(1)
+                    ```
+
+                    - `Eval.defer` - откладывает вычисление выражение типа `Eval`
+                    - `Eval.now` - просто оборачивает значение
+
+                    ---
+
+                    ```scala [1-15]
+                    import cats.Eval
+                    // Не упадет со StackOverflow
+                    println(loop[Eval](1_000_000_000L).value)
+                    ```
+
+                    ---
+                    ```scala [1-15]
+                    def loopSafe[F[_]: Monad](in: Long): F[Long] =
+                      Monad[F].tailRecM((in, 0L)) { case (c, res) =>
+                        if (c < 1)
+                          res.asRight[(Long, Long)].pure[F]
+                        else
+                          ((c - 1, res + c)).asLeft[Long].pure[F]
+                      }
+                    ```
+
+                    ---
+
+                    - Есть специальный трейт для 100% стеко-безопасных Монад
+                    - То есть для тех монад, у которых метод `flatMap` - стеко-безопасный
+
+                    ```scala [1-15]
+                    trait StackSafeMonad[F[_]] extends Monad[F] {
+                      def tailRecM[A, B](a: A)(f: A => F[Either[A, B]]): F[B] =
+                        flatMap(f(a)) {
+                          case Left(a)  => tailRecM(a)(f)
+                          case Right(b) => pure(b)
+                        }
+                      }
+                    ```
+
+                    - `Eval` как раз реализует `StackSafeMonad`
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    `Functor`, `Applicative`, `Monad` - сложные слова, и непонятные концепты
+
+                    Давайте разберем, что они нам дают
+
+                    ---
+
+                    Для этого давайте попробуем решить простую задачу разными способами
+
+                    Задача - написать простой валидатор данных
+
+                    ---
+
+                    В императивной парадигме - код бы выглядел у нас так:
+
+                    ```scala [1-15]
+                    def parseNumber(input: String): BigDecimal = ???
+                    def validateAge(input: BigDecimal): Age = ???
+                    def validateEmail(input: String): Email = ???
+
+                    def validateUser(age: String, email: String): User = {
+                      val number = parseNumber(age)
+                      val vAge   = validateAge(number)
+                      val vEmail = validateEmail(email)
+
+                      User(vAge, vEmail)
+                    }
+                    ```
+
+                    ---
+
+                    `validateUser` - состоит из 3 последовательных вычислений:
+
+                    - `parseNumber`
+                    - `validateAge`
+                    - `validateEmail`
+
+                    ---
+
+                    Каждое вычисление - неявно может завершиться с ошибкой, поэтому
+                    и сам `validateUser` может завершиться с ошибкой
+
+                    Мы объявили вычисления на уровне языка, жестко привязали его
+                    к синхронной модели вычисления
+
+                    ---
+
+                    Теперь - давайте перепишем с явным указанием того, что у нас вычисление
+                    имеет канал ошибок:
+
+                    ```scala [1-15]
+                    def parseNumber(input: String): Option[BigDecimal] = ???
+                    def validateAge(input: BigDecimal): Option[Age] = ???
+                    def validateEmail(input: String): Option[Email] = ???
+
+                    def validateUser(age: String, email: String): Option[User] =
+                      for {
+                        number <- parseNumber(age)
+                        vAge   <- validateAge(number)
+                        vEmail <- validateEmail(email)
+                      } yield User(vAge, vEmail)
+                    ```
+
+                    ---
+
+                    В целом, структура кода осталось той же. Мы все также пишем императивный код.
+                    Но, изменился один нюанс.
+
+                    Мы вынесли из языка _эффект_ падения с ошибкой и перенесли его на свой тип данных.
+
+                    ---
+
+                    Давайте попробуем сделать тоже самое только теперь с моделью вычисления.
+
+                    Мы уже проходили сегодня `Eval`, давайте попробуем использовать его:
+
+                    ```scala [1-15]
+                    def parseNumber(input: String): Eval[BigDecimal] = ???
+                    def validateAge(input: BigDecimal): Eval[Age] = ???
+                    def validateEmail(input: String): Eval[Email] = ???
+
+                    def validateUser(age: String, email: String): Eval[User] =
+                      for {
+                        number <- parseNumber(age)
+                        vAge   <- validateAge(number)
+                        vEmail <- validateEmail(email)
+                      } yield User(vAge, vEmail)
+                    ```
+
+                    ---
+
+                    - Наш код поменялся только в одном месте: сменился тип `Option` на `Eval`
+                    - Теперь наше выражение _ленивое_, но `Eval` не поддерживает работу с ошибками
+
+                    - Как нам получить выражение одновременно _ленивое_ и _поддерживающее_ работу с ошибками?
+                    - Ввести новые тип `EvalOption` и реализовать все для него?
+
+                    ---
+
+                    - А нужно ли нам это, чтобы написать функцию `validateUser`?
+                    - Она же поменялась только в одном месте - в возвращаемом значении?
+
+                    ---
+
+                    Давайте попробуем поймать саму суть того, что мы хотим написать.
+
+                    У нас есть какие-то действия, которые представлены в виде `Validator`
+
+                    ```scala [1-15]
+                    trait Validator[F[_]] {
+                      def parseNumber(input: String): F[BigDecimal]
+                      def validateAge(input: BigDecimal): F[Age]
+                      def validateEmail(input: String): F[Email]
+                    }
+
+                    // Уже представленные реализации мы можем выразить, как реализации
+                    // трейта Validator
+                    object OptionValidator extends Validator[Option] { ??? }
+                    object EvalValidator   extends Validator[Eval] { ??? }
+                    ```
+
+                    ---
+
+                    Тогда функция `validateUser` будет выглядеть вот так:
+
+                    ```scala [1-15]
+                    def validateUser[F[_]](validator: Validator[F])(
+                      age: String,
+                      email: String
+                    ): F[User] = ???
+                    ```
+
+                    Но как нам ее реализовать? Мы же не умеем комбинировать `F[_]` выражения из `Validator`?
+
+                    ---
+
+                    Ответ - мы можем использовать `Monad`:
+
+                    ```scala [1-15]
+                    import cats.Monad
+                    import cats.syntax.map._     // метод map
+                    import cats.syntax.flatMap._ // метод flatMap
+
+                    def validateUser[F[_]: Monad](validator: Validator[F])(
+                      age: String,
+                      email: String
+                    ): F[User] = {
+                      import validator._
+                      for {
+                        number <- parseNumber(age)
+                        vAge   <- validateAge(number)
+                        vEmail <- validateEmail(email)
+                      } yield User(vAge, vEmail)
+                    }
+                    ```
+
+                    ---
+
+                    `Monad` здесь выступает, в качестве, универсального клея, и обозначает саму суть
+                    императивного программирования через свой метод `flatMap`:
+
+                    ```scala [1-15]
+                    trait Monad[F[_]] {
+                      def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
+                    }
+                    ```
+
+                    Иными словами, мы можем выразить саму суть императивного программирования и
+                    отделить ее от языка, и от множества других аспектов.
+
+                    ---
+
+                    Любая реализация `Monad` (все, у чего есть `flatMap`) может быть использовано
+                    для написания императивного кода и абстрагирования от какого-то конкретного эффекта:
+
+                    - `Option`, `Either[SomeError, *]` - эффект наличия ошибки
+                    - `Eval`- эффект ленивости
+                    - `reactor.core.publisher.Mono` - эффект асинхронности
+
+                    ---
+
+                    Но, в Scala, мы можем пойти дальше и абстрагироваться внутри нашего кода от того, как он
+                    будет исполняться, при этом не терять возможность писать "императивный" код (нам помогает с этим
+                    `for-comprehension`).
+
+                    ---
+
+                    Мы можем написать одну реализацию `validateUser` и в зависимости от переданного `F[_]`
+                    получить:
+                    - либо программу с возможностью иметь ошибку
+                    - либо ленивую программу
+                    - либо асинхронную программу
+                    - либо все перечисленное сразу
+
+                    ---
+
+                    Таким образом мы можем получать максимально генерализированный код, который можно
+                    написать один раз.
+
+                    ---
+
+                    Немножко философии:
+
+                    У создателей современного языка есть выбор: либо прятать оператор `flatMap`, либо позволять работать
+                    c `Monad` напрямую.
+
+                    Во многих языках есть синтаксис: `.?`, `async/await`, который по факту встраивает в язык работу
+                    с `flatMap`
+
+                    В Scala и Haskell мы можем работать с `Monad` напрямую и даже реализовать свои `Monad`
+
+                </textarea>
+            </section>
+        </section>
+    </div>
+</div>
+
+<script type="module" src="/main.js"></script>
+</body>
+</html>

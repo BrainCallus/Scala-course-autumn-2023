@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="/app/node_modules/reveal.js/dist/reveal.css">
+    <title>Семинар 01 - Scala и Основы sbt</title>
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <!--Intro-->
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Scala и Основы sbt
+
+                    Семинар 01
+			    </textarea>
+            </section>
+        </section>
+
+        <!--Organizational notes-->
+        <section>
+            <section>
+                <h2>Организационные заметки</h2>
+                <ul>
+                    <li class="fragment" data-fragment-index="1" style="font-size:30px">
+                        Каждый семинар, начиная с этого, вы будете получать домашнее задание. У каждого задания будет
+                        дедлайн в неделю
+                    </li>
+                    <li class="fragment" data-fragment-index="2" style="font-size:30px">
+                        В сумме, домашние задания будут составлять 20% от всей итоговой оценки
+                    </li>
+                    <li class="fragment" data-fragment-index="3" style="font-size:30px">
+                        Сдача домашних заданий будет организована через Gitlab,
+                        где вы будете получать задания в приватный репозиторий, и нашу образовательную платформу
+                    </li>
+                </ul>
+            </section>
+        </section>
+
+        <!--IDE-->
+        <section>
+            <section>
+                <h2>Среды для разработки (IDE)</h2>
+                <ul>
+                    <li class="fragment" data-fragment-index="1">
+                        Вы можете использовать любой редактор для написания кода. Самые комфортные для использования
+                        IDE:
+                    </li>
+                    <ul>
+                        <li class="fragment" data-fragment-index="2">Intellij IDEA</li>
+                        <li class="fragment" data-fragment-index="3">VS Code</li>
+                    </ul>
+                    <li class="fragment" data-fragment-index="4">
+                        Оба нуждаются в специальных Scala плагинах, чтобы корректно работать с Scala кодом
+                    </li>
+                </ul>
+            </section>
+            <section>
+                <h2>Intellij IDEA</h2>
+                <ul>
+                    <li>Плюсы:</li>
+                    <ul>
+                        <li class="fragment" data-fragment-index="1">Лучшая навигация по коду</li>
+                        <li class="fragment" data-fragment-index="2">Все работает из коробки</li>
+                    </ul>
+                    <li class="fragment" data-fragment-index="3">Минусы:</li>
+                    <ul>
+                        <li class="fragment" data-fragment-index="4">Высокое потребление памяти</li>
+                    </ul>
+                </ul>
+            </section>
+            <section>
+                <h2>VS Code</h2>
+                <ul>
+                    <li>Плюсы:</li>
+                    <ul>
+                        <li class="fragment" data-fragment-index="1">Легковесный</li>
+                        <li class="fragment" data-fragment-index="2">Быстрая инкрементальная компиляция</li>
+                    </ul>
+                    <li class="fragment" data-fragment-index="3">Минусы:</li>
+                    <ul>
+                        <li class="fragment" data-fragment-index="4">
+                            Требует дополнительных инструментов для сборки (Metals) для более богатого функционала
+                        </li>
+                        <li class="fragment" data-fragment-index="5">
+                            Иногда могут быть проблемы с навигацией, так как инструмент относительно новый
+                        </li>
+                    </ul>
+
+                </ul>
+            </section>
+            <section>
+                <ul>
+                    <li class="fragment" data-fragment-index="6">
+                        Вы можете выбрать сами IDE, но мы рекомендуем использовать Intellij для более простого
+                        использования
+                    </li>
+                </ul>
+            </section>
+        </section>
+        <section>
+            <section>
+                <h2>SBT: Scala build tool</h2>
+                <p class="fragment" data-fragment-index="1" style="text-align: left;">
+                    Самый популярный и распространенный сборщик для Scala проектов
+                </p>
+                <p class="fragment" data-fragment-index="2" style="text-align: left;">
+                    Использует Scala для написания спецификации, как собрать ваше приложение
+                </p>
+                <p class="fragment" data-fragment-index="3" style="text-align: left;">
+                    Intellij Idea использует sbt для всех Scala проектов и предоставляет интерактивный sbt shell
+                </p>
+                <p class="fragment" data-fragment-index="4" style="text-align: left;">
+                    Необходимо иметь JDK 8/11/16+ в системе, но Scala не использует новые фичи из jdk 8+ версий
+                </p>
+            </section>
+
+            <section data-markdown>
+                <textarea data-template>
+                    ## SBT
+
+                    ### Базовые команды
+
+                    ```console [1-9|1|2|3-4|5|6-7|8|9]
+                    user@mac example % sbt
+                    sbt:example> compile
+                    sbt:example> projects # Список всех модулей вашего проекта
+                    sbt:example> project moduleName
+                    sbt:example> reload # Перезагружает спецификацию сборки
+                    sbt:example> moduleName/run # запускает приложение из модуля
+                    sbt:example> moduleName/test # запускает тесты из модуля
+                    sbt:example> clean # Удаляет все сгенерированные файлы
+                    sbt:example> help
+                    ```
+                    ---
+
+                    ### Файлы конфигурации (Build файлы)
+
+                    - Главный файл спецификации сборки проекта - `build.sbt`
+                    - Есть еще дополнительные файлы в папке `project`: `plugins.sbt`, `build.properties` (здесь фиксируется версия sbt)
+
+                    ---
+
+                    - Пример простого `build.sbt` файла:
+
+                    ```scala [1-7|1|2-4|6-7]
+                    scalaVersion := "2.13.3"
+                    name := "hello-world"
+                    organization := "kek.shrek"
+                    version := "1.0"
+
+                    libraryDependencies ++=
+                      Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2")
+                    ```
+
+                    ---
+
+                    - Пример более модульного файла
+
+                    ```scala [1-15]
+                    import Dependencies._
+
+                    ThisBuild / scalaVersion := "2.13.8"
+                    ThisBuild / version := "1.0"
+
+                    lazy val root = (project in file("."))
+                      .settings(
+                        name := "example",
+                        libraryDependencies ++= Seq(parser.combinators)
+                      )
+                    ```
+
+                    ---
+
+                    - `project/Dependencies.scala`
+
+                    ```scala [1-15]
+                    import sbt._
+
+                    object Dependencies {
+                      object parser {
+                        val version = "1.1.2"
+                        val combinators = "org.scala-lang.modules" %% "scala-parser-combinators" % version
+                      }
+                    }
+                    ```
+
+                    ---
+
+                    ### Управление зависимостями
+
+                    Чтобы добавить новую зависимость в проект, нужно использовать ключ настройки `libraryDependencies`.
+
+                    Значение зависимости состоит:
+                    * groupId (организация)
+                    * artifactId (название артефакта)
+                    * revision (версия)
+                    * configuration (опциональная), например `Test` добавляет зависимость только в тесты
+
+                    ---
+
+                    И полное значение зависимости выглядит так: `"groupId % artifactId % revision"`
+
+                    ---
+
+                    Вы можете добавлять `Maven` зависимости таким образом, но проблема возникает при использовании Scala
+                    специфичных зависимостей.
+
+                    ---
+
+                    Scala имеет разные версии, большинство из них обратно-совместимые, автор зависимости должен
+                    предоставить исходный код для каждой мажорной Scala версии: 2.12, 2.13, 3.0
+
+                    sbt может автоматически скачать зависимость, в зависимости от Scala версии в проекте:
+                    `libraryDependency += "groupId % artifactId %% revision"`
+
+                    ---
+
+                    Помните, что зависимости имеют свойство транзитивности. Это значит, что добавив зависимость, она может добавить
+                    свои зависимости в ваш проект, и таким образом заставит вас неявно
+                    использовать старую или новую версию ваших зависимостей из проекта
+
+                    ---
+
+                    Не все зависимости лежат на одном сервере; sbt использует Maven2 стандарт репозиториев по умолчанию
+
+                    Если ваша зависимость находится не в стандартных репозиториях, вы должны добавить отдельный
+                    resolver необходимые репозитории, чтобы помочь sbt найти зависимость.
+
+
+                    ---
+
+                    Чтобы добавить дополнительный репозиторий, нужно использовать ключ `resolvers`:
+
+                    ```scala
+                    resolvers += name at location
+                    ```
+
+                    Например:
+
+                    ```scala
+                    resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+                    ```
+
+                    ---
+                    ### Плагины
+
+                    - Плагины могут объявлять дополнительные настройки для abt, которые будут автоматически добавляться во все проекты
+                    или явно объявляться для конкретных модулей. Плагины можно добавить через файл `project/plugin.sbt`
+
+                    ---
+
+                    - Два полезных плагина:
+                      1. `scalafmt` - позволяет настроить форматирование кода через конфигурационный файл
+                      2. `dependencyTree` - позволяет просматривать граф зависимостей проекта и находить зависимости, которые конфликтуют
+
+                    ---
+
+                    Некоторые плагины можно объявить глобально для всех sbt проектов в системе. Например, `dependencyTree`
+
+                    Чтобы использовать плагины автоматически в проекте, добавьте их в файл `$HOME/.sbt/1.0/plugins/build.sbt`
+
+                    ```
+                    addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")
+                    ```
+
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <h2>Время практики</h2>
+        </section>
+    </div>
+</div>
+
+<script type="module" src="/main.js"></script>
+</body>
+</html>

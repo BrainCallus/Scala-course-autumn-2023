@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    
+    
+    <title>Лекция 01 - Основы Языка - Часть 1</title>
+  <script type="module" crossorigin src="/lectures/assets/main.68923260.js"></script>
+  <link rel="stylesheet" href="/lectures/assets/main.3bd49d33.css">
+  <link rel="stylesheet" href="/lectures/assets/index.6e35bb16.css">
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <!--Intro-->
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Основы Языка - Часть 1
+
+                    Лекция 01
+                </textarea>
+            </section>
+        </section>
+
+        <!--Who are we-->
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Какие ВУЗы участвуют?
+
+                    - ВШЭ
+                    - ИТМО
+                    - Иннополис
+
+                    ---
+
+                    ### Кто преподает курс?
+
+                    - Иван Лягаев - Лекции
+
+                    ---
+
+                    - Иван Финоченко - Семинары ВШЭ
+                    - Евгений Коновалов - Семинары ИТМО
+                    - Артем Баханов - Семинары Иннополис
+                    - Павел Тишкин - Семинары Иннополис
+
+                    ---
+
+                    ### Кто помогает проверять ДЗ?
+
+                    - Булат Хабибуллин
+                    - Дмитрий Подпрятов
+                    - Евгений Лутанин
+                    - Камил Камалиев
+                    - Карина Тулебаева
+                    - Михаил Олокин
+
+                </textarea>
+            </section>
+            <section>
+                <h3>Где используется Scala в Тинькофф?</h3>
+                <ul>
+                    <li class="fragment" data-fragment-index="1">Аутентификация (Tinkoff ID)</li>
+                    <li class="fragment" data-fragment-index="2">Продукты для физических лиц</li>
+                    <ul>
+                        <li class="fragment" data-fragment-index="3">Счета, Операции, Открытие продуктов</li>
+                        <li class="fragment" data-fragment-index="4">Платежи</li>
+                        <li class="fragment" data-fragment-index="5">Вкладка "Город", Путешествия</li>
+                    </ul>
+                    <li class="fragment" data-fragment-index="6">Защитник Олег</li>
+                </ul>
+            </section>
+            <section>
+                <ul>
+                    <li class="fragment" data-fragment-index="1">Тинькофф.Мобайл</li>
+                    <li class="fragment" data-fragment-index="2">Тинькофф.Инвестиции</li>
+                    <ul>
+                        <li class="fragment" data-fragment-index="3">Торговля</li>
+                        <li class="fragment" data-fragment-index="4">Расчет лимитов брокерских счетов</li>
+                        <li class="fragment" data-fragment-index="5">Продукты для Private пользователей</li>
+                    </ul>
+                    <li class="fragment" data-fragment-index="6">Тинкофф Кредитный Брокер</li>
+                </ul>
+            </section>
+            <section>
+                <ul>
+                    <li class="fragment" data-fragment-index="1">Платформа для нагрузочного тестирования</li>
+                    <li class="fragment" data-fragment-index="2">Тинькофф.Бизнес</li>
+                    <ul>
+                        <li class="fragment" data-fragment-index="3">Счета, Операции, Открытие продуктов</li>
+                        <li class="fragment" data-fragment-index="4">Платежи</li>
+                        <li class="fragment" data-fragment-index="5">Депозиты, Овернайты, Доставка денег, Штрафы</li>
+                        <li class="fragment" data-fragment-index="6">Open API</li>
+                        <li class="fragment" data-fragment-index="7">Зарплатный проект</li>
+                        <li class="fragment" data-fragment-index="8">ВЭД</li>
+                    </ul>
+                </ul>
+            </section>
+        </section>
+
+        <section>
+            <section>
+                <h2><a href="https://fintech.tinkoff.ru/">Тинькофф Образование</a></h2>
+                <p>Финтех Школа, Оплачиваемые Стажировки и прочее</p>
+                <img width="30%" src="/lectures/assets/tinkoff-education.fe288bf6.png">
+            </section>
+        </section>
+
+        <section>
+            <section>
+                <h2>Курс</h2>
+                <p class="fragment r-fit-text">Введение в Функциональное Программирование и язык Scala</p>
+            </section>
+            <section>
+                <p class="fragment">Почему вы выбрали этот курс?</p>
+                <p class="fragment">Какие у вас ожидания от курса?</p>
+            </section>
+            <section>
+                <h2>Структура Курса</h2>
+                <p class="fragment" data-fragment-index="1">Курс будет состоять из 3 блоков:</p>
+                <ol>
+                    <li class="fragment" data-fragment-index="2">Язык Scala: синтаксис, конструкции и тд.</li>
+                    <li class="fragment" data-fragment-index="3">Функциональное программирование</li>
+                    <li class="fragment" data-fragment-index="4">Многопоточное программирование</li>
+                </ol>
+            </section>
+            <section>
+                <h2>Оценивание</h2>
+                <ol>
+                    <li class="fragment" data-fragment-index="1">Домашние задания - 20%</li>
+                    <li class="fragment" data-fragment-index="2">Индивидуальный проект - 40%</li>
+                    <li class="fragment" data-fragment-index="3">Средний экзамен - 15%</li>
+                    <li class="fragment" data-fragment-index="4">Финальный экзамен - 25%</li>
+                </ol>
+            </section>
+            <section>
+                <h2>Что будет происходить во время курса?</h2>
+                <ul>
+                    <li class="fragment" data-fragment-index="1">После каждого семинара будет выдаваться домашнее
+                        задание
+                        с недельным дедлайном
+                    </li>
+                    <li class="fragment" data-fragment-index="2">Создание индивидуального проекта после серединного
+                        экзамена
+                    </li>
+                </ul>
+            </section>
+            <section>
+                <h2>Ресурсы - Книги</h2>
+            </section>
+            <section>
+                <img class="r-stretch" src="/lectures/assets/programming-in-scala.4d6181b8.jpg">
+                <p><b>Programming in Scala, Fourth Edition</b>: Martin Odersky, Lex Spoon, Bill Venners</p>
+            </section>
+            <section>
+                <img class="r-stretch" src="/lectures/assets/functional-programmin-in-scala.a2c77274.png">
+                <p><b>Functional Programming in Scala</b>: Paul Chiusano, Runar Bjarnason</p>
+            </section>
+            <section>
+                <h2>Ресурсы - Курсы</h2>
+                <ul>
+                    <li>
+                        <a href="https://www.coursera.org/learn/scala-functional-programming">
+                            Functional Programming Principles in Scala
+                        </a> от Мартина Одерски, создателя языка
+                    </li>
+                    <li>
+                        <a href="https://stepik.org/course/16243/promo">
+                            Введение в Scala
+                        </a> от Олега Нижникова
+                    </li>
+                </ul>
+            </section>
+            <section>
+                <h2>Ресурсы - Телеграм Группы</h2>
+                <ul>
+                    <li>Scala User Group: <a href="https://t.me/scala_ru">https://t.me/scala_ru</a></li>
+                    <li>Scala (Co)Universal: <a href="https://t.me/scala_any">https://t.me/scala_any</a></li>
+                </ul>
+            </section>
+        </section>
+        <section>
+            <section>
+                <h2>Что такое Scala?</h2>
+                <p>Scala - это язык с несколькими парадигмами программирования</p>
+            </section>
+            <section>
+                <p>Первая парадигма - Объектно-Ориентированное Программирование</p>
+                <p>В ООП все является объектов, в котором есть состояние и поведение над этим состоянием</p>
+            </section>
+            <section>
+                <p>Вторая парадигма - Функциональное программирование</p>
+                <p>В ФП все является либо значением, либо функцией</p>
+            </section>
+            <section>
+                <h3>Зачем стоит использовать Scala?</h3>
+                <ul>
+                    <li class="fragment" data-fragment-index="1">
+                        Уже давно пройден физический порог производительности одного ядра процессора.
+                        Все процессоры давно имеют несколько ядер.
+                    </li>
+                    <li class="fragment" data-fragment-index="2">
+                        Нужно уметь правильно задействовать все возможности процессора, путем написания
+                        многопоточных программ и приложений
+                    </li>
+                </ul>
+            </section>
+            <section>
+                <ul>
+                    <li class="fragment" data-fragment-index="2">
+                        У бизнес-заказчиков есть потребность создавать сложные, стабильные и поддерживаемые
+                        сервисы
+                    </li>
+                </ul>
+            </section>
+            <section>
+                <h3>Плюсы Scala</h3>
+                <ul>
+                    <li class="fragment" data-fragment-index="1">
+                        Лаконичность. Меньше кода, проще поддерживать приложения
+                    </li>
+                    <li class="fragment" data-fragment-index="2">
+                        Богатая система типов
+                    </li>
+                    <li class="fragment" data-fragment-index="3">
+                        Возможность использовать Java экосистему. Из Scala можно вызывать Java код
+                    </li>
+                </ul>
+            </section>
+            <section>
+                <h3>Сложные многопоточные системы</h3>
+                <p>
+                    Scala за счет своей богатой системы типов имеет множество
+                    инструментов для написания многопоточных программ
+                </p>
+                <ul>
+                    <li>Акторная модель</li>
+                    <li>Futures</li>
+                    <li>Green Threads</li>
+                </ul>
+                <p>Все это позволяет просто писать многопоточные программы</p>
+            </section>
+            <section>
+                <h3>Совместимость с Java</h3>
+                <p>Главная платформа исполнения для Scala - Виртуальная Машина Java (JVM)</p>
+            </section>
+            <section>
+                <p>Scala предоставляет полную совместимость с Java</p>
+                <ul>
+                    <li>Можно напрямую использовать Java код из Scala</li>
+                    <li>Можно использовать скомпилированные библиотеки Java</li>
+                    <li>Можно использовать Scala код из Java</li>
+                </ul>
+            </section>
+            <section>
+                <p>Это позволяет переиспользовать всю богатую низкоуровневую экосистему Java</p>
+            </section>
+            <section>
+                <h3>Где можно применять Scala?</h3>
+                <ul>
+                    <li class="fragment" data-fragment-index="1">Главная сфера применения -
+                        создание сложных backend (веб-сервер) приложений
+                    </li>
+                    <li class="fragment" data-fragment-index="2">Можно использовать для создания frontend приложений
+                        через
+                        Scala.js
+                    </li>
+                    <li class="fragment" data-fragment-index="3">
+                        Spark - платформы для распределенных вычислений на огромных массивах данных
+                    </li>
+                </ul>
+            </section>
+            <section>
+                <p>Scala.js и Spark нишевое использование Scala, поэтому не будет покрываться в этом курсе</p>
+                <p>Главный фокус этого курса - дать полную базу для разработки backend приложений</p>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Повтор Java
+
+                    Давайте вспомним основные концепции Java и ООП
+
+                    ---
+                    ### Классы
+
+                    - Класс - главный элемент парадигмы Объектно-Ориентированного Программирования
+                    - Класс содержит в себе состояние в виде переменных и поведение над этим состоянием в виде методов
+
+                    ---
+
+                    ```java [1-11|2|4]
+                    public class Hello {
+                    	private String greeting;
+
+                    	public String makeGreeting() {
+                    		return greeting;
+                        }
+
+                        public Hello(String greetingArg) {
+                    		this.greeting = greetingArg;
+                        }
+                    }
+                    ```
+                    ---
+
+                    ### Объекты
+
+                    - С помощью классов можно создавать объекты. Класс можно представить в виде шаблона получаемых объектов
+                    - У каждого объекта есть состояние (его переменные) и поведение (его методы)
+
+                    ```java [1-5|1,4|2,5]
+                    Hello objectOne = new Hello("privet!");
+                    Hello objectTwo = new Hello("hi!");
+
+                    System.out.println(objectOne.makeGreeting());
+                    System.out.println(objectTwo.makeGreeting());
+                    ```
+
+                    ---
+
+                    ### Конструкторы
+
+                    - Объекты создаются с помощью специальных методов - конструкторов. Класс может иметь несколько таких методов
+                    - Эти специальные методы имеют такое же название, как и класс
+
+                    ---
+
+                    - Давайте определим новый класс - `MultiHello`
+
+                    ```java
+                    public class MultiHello {
+                        private String greetingRussian;
+                        private String greetingEnglish;
+
+                        public void makeGreeting() {
+                            System.out.println(greetingRussian);
+                            System.out.println(greetingEnglish);
+                        }
+                    ...
+                    ```
+                    ---
+
+                    - У него будет несколько конструкторов
+                    - У каждого конструктора будет свой набор аргументов
+
+                    ```java
+                    ...
+                        public MultiHello() {
+                            this("privet!", "hi!");
+                        }
+
+                        public MultiHello(String russian, String english) {
+                            this.greetingRussian = russian;
+                            this.greetingEnglish = english;
+                        }
+                    }
+                    ```
+                    ---
+
+                    - Можно создать объект, используя любой определенный конструктор
+
+                    ```java [1-5]
+                    MultiHello throughFirst = new MultiHello();
+                    MultiHello throughSecond = new MultiHello(
+                        "zdarova!",
+                        "hello!"
+                    );
+                    ```
+                    ---
+
+                    ### Статическая область
+
+                    - Методы и переменные могут быть статическими
+                    - Это значит, что такие методы и переменные единственные для всех объектов этого класса,
+                    и относятся к классу, а не к объектам
+
+                    ```java [1-15]
+                    public class Earth {
+                        public static double G = 9.8
+
+                        public static double velocity(double time) {
+                            return time * G;
+                        }
+                    }
+                    ```
+
+                    ---
+
+                    - Статические методы и переменные можно использовать без создания объектов
+
+                    ```java [1-1]
+                    double time = Earth.velocity(1) / Earth.G;
+                    ```
+
+                    ---
+
+                    ### Наследование
+
+                    - Классы могут формировать иерархии через наследование
+                    - Наследование помогает передать определенного поведение родительского класса наследникам
+                    этого класса
+                    - Наследники имеют возможность специализировать поведение через перезаписывание
+
+                    ---
+
+                    - Давайте определим иерархию животных через класс `Animal`
+                    - `Animal` будет абстрактным родительским классом
+                    - У него будет абстрактный метод `makeSound`, которые должны будут реализовать наследники
+
+                    ```java [1-4]
+                    public abstract class Animal {
+                        // Отсутствие `{}` говорит об отсутствии реализации метода
+                        // Поэтому метод абстрактный
+                        public void makeSound()
+                    }
+                    ```
+
+                    ---
+
+                    - Теперь давайте объявим двух наследников класса `Animal`: класс кошки `Cat` и класс собаки `Dog`
+                    - В каждом из дочерних классов реализуем метод `makeSound`
+
+                    ```java [1-11]
+                    public class Dog extends Animal {
+                        override public void makeSound() {
+                            System.out.println("woof");
+                        }
+                    }
+
+                    public class Cat extends Animal {
+                        override public void makeSound() {
+                            System.out.println("meow");
+                        }
+                    }
+                    ```
+
+                    ---
+
+                    - Мы можем использовать объекты каждого из дочерних классов, как объект `Animal`
+                    - Эта способность называется **_полиморфизм_**
+
+                    ```java [1-15]
+                    public class Program {
+                        public static void animalMakeSound(Animal animal) {
+                            animal.makeSound();
+                        }
+
+                        public static void main(String[] args) {
+                            animalMakeSound(new Dog());
+                            animalMakeSound(new Cat());
+                        }
+                    }
+                    ```
+
+                    ---
+                    ### Модель памяти Java
+
+                    - В Java существуют два типа значений: примитивы (`int`, `short`, `long` и другие) и объекты, представляющие из
+                    себя набор переменных и методов
+
+                    ```java [1-15]
+                    int primitiveOne = 1;
+                    double primitiveTwo = 2;
+
+                    String object = "one";
+                    Cat cat = new Cat();
+                    Dog dog = new Dog();
+                    ```
+
+                    ---
+
+                    - Из-за этого в Java есть два вида памяти: стек и куча
+                    - Из-за того что примитивы имеют определенный размер памяти, они хранятся в стеке
+                    - Из-за того что объекты могут иметь неопределенный размер памяти, они хранятся в куче
+
+                    ---
+
+                    - Все переменные хранятся на стеке
+                    - Если переменная примитив, то она содержит само значение примитива
+                    - Если переменная объект, то она содержит ссылку на объект в куче
+                    - Ссылка - это уникальный указатель на память в куче, где хранится объект
+
+                    ---
+                    - Переменные находятся в стеке до тех пор, пока они используются
+                    - Поэтому стек во время исполнения программы растет и уменьшается
+                    - Что тогда происходит с памятью на куче?
+
+                    ---
+                    - Память кучи периодически очищается специальным процессом рантайма - сборщиком мусора (Garbage Collector, или GC)
+                    - Этот процесс проверяет, есть ли живые ссылки на объекты в куче. Если такие объекты находятся, то
+                    их память очищается и она впоследствии может быть переиспользована.
+                    ---
+
+                    ### Виртуальная машина Java
+
+                    - Java программы исполняются на виртуальное машине Java (Java Virtual Machine, или JVM)
+                    - JVM позволяет запускать Java программы на различных операционных системах и архитектурах процессоров
+
+                    ---
+
+                    - Девиз: Build once, run everywhere (Собрал единожды, запускать можно где угодно)
+                    - Происходит это за счет компиляции кода в низкоуровневые инструкции - Java Bytecode
+                    - JVM транслирует эти инструкции в нативные инструкции конкретной платформе
+                </textarea>
+            </section>
+        </section>
+
+
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Scala
+
+                    Начнем изучать Scala
+                </textarea>
+            </section>
+            <section data-markdown>
+				<textarea data-template>
+                    ### Выражение
+
+                    В Scala все является выражением
+
+                    (В Java, например, все является утверждением. Каждая строчка заканчивается `;`)
+                    ---
+
+                    ```scala [1-15]
+                    1 + 1 // возвращает тип Int
+                    ```
+
+                    - Это выражение типа __`Int`__. Его результатом будет значение типа Int
+                    - Ниже представлено другое выражение, которое возвращает __`Double`__
+
+                    ```scala [1-15]
+                    1 / 2 // returns Double
+                    ```
+
+                    ---
+                    ```scala [1-15]
+                    // Нет `;`
+                    var x: Int = 1 + 1 // Возвращает Unit
+                    ```
+                    - Присваивание переменной - это уже утверждение
+                    - Утверждения в Scala - это частный случай выражения, которое возвращает Unit
+
+                    ---
+
+                    ```scala [1-15]
+                    var x: Unit = ()
+                    ```
+
+                    - __`Unit`__ - это специальный тип, у которого есть только одно абстрактное значение
+                    - Это значение имеет специальный литерал - `()`.
+                    - Unit очень похож по поведению на void из Java, но может быть использован шире в Scala
+
+                    ---
+
+                    ```scala [1-15]
+                    var x: Int = <Expression>
+                    ```
+
+                    - Правая часть присваивания переменной ждет выражение определенного типа Int
+                    - Если мы подставим выражение `1 + 1`, то у такого выражение является типом Int, поэтому
+                    переменная `x` тоже должна быть типа `Int`
+                    - Иначе возникла бы ошибка компиляции
+
+                    ```scala [1-15]
+                    var x: Int = 1 + 1
+                    ```
+                    ---
+
+                    - Scala компилятор умный
+                    - Мы можем убрать явное указание типа переменной, и позволить компилятору самому вывести тип,
+                    переменной, который должен быть
+                    - Такой процесс называется (_выводом типов_ или _type inference_):
+
+                    ```scala [1-4]
+                    // x типа Int
+                    var x = 1 + 1
+                    // y тоже теперь типа Int
+                    var y = x
+                    ```
+
+                    ---
+
+                    - Есть возможность указывать сразу несколько выражений, используя фигурный скобки
+                    - Тип выражения в скобках будет равен последнему выражению
+
+                    ```scala [1-15[
+                    var x: String = {
+                      1 + 2                   // Выражение Int
+                      println("hello world!") // Утверждение
+                      "hello!"                // Выражение String
+                    }
+                    ```
+
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+				<textarea data-template>
+                    ### Переменные
+                    ---
+
+                    - __Переменные__ (__Variables__) в Scala точно такие же, как и в других языках программирования
+                    - Они могут быть объявлены с помощью ключевого слова __`var`__
+
+                    ```scala [1-3]
+                    var one: Int = 1
+                    var half: Double = 1 / 2
+                    var hello: String = "Hello!"
+                    ```
+                    ---
+
+                    - Им можно присваивать новые значения
+                    - Например, поменять ссылку на другой объект
+
+                    ```scala [1-3]
+                    one = 2
+                    half = 1.0
+                    hello = "Hi!"
+                    ```
+
+                    ---
+
+                    ### Значения
+
+                    __Значения__ (__Values__) отличаются от переменных
+
+                    ---
+
+                    - __Значения__ могу быть созданы, используя ключевое слово __`val`__, так же,
+                    как и переменные.
+
+                    ```scala [1-3]
+                    val one: Int = 1
+                    val half: Double = 1 / 2
+                    val hello: String = "Hello!"
+                    ```
+                    ---
+
+                    - Но, __Значениям__ не может быть присвоено новое содержимое
+                    - Как только __Значение__ чем-то было проинициализировано,
+                    оно всегда будет держать это значение
+
+                    ```scala [1-3]
+                    one = 1 	  // It is prohibited, will not compile
+                    half = 1.0    // It is prohibited, will not compile
+                    hello = "Hi!" // It is prohibited, will not compile
+                    ```
+
+                    ---
+
+                    ### Примитивные типы
+
+                    В Scala существует множество типов значений, или примитивных типов
+
+                    ---
+
+                    - Float, Double
+                    - Short, Int, Long
+                    - Byte
+                    - Boolean
+                    - Char
+                    - Unit
+
+                    ---
+
+                    - Большинство из них - это более богатая версия (больше методов) типов из Java примитивов
+                    - Каждый из этих типов представляет из себя объектную обертку над Java примитивом
+                    - Например:
+
+                    ```scala [1-15]
+                    val x: Double = 1.3
+                    // Встроенные конвертации для удобства
+                    val y: Int = x.toInt
+                    println(y) // 1
+                    ```
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+				<textarea data-template>
+                    ### Классы
+
+                    В Scala есть классы для реализации ООП парадигмы
+                    ---
+                    Эти два определения класса из Scala и Java эквиваленты
+
+                    ```scala [1-15]
+                    // Scala
+                    class Cat(nameArg: String) {
+                      private var name: String = nameArg
+                    }
+                    ```
+                    ```java [1-15]
+                    // Java
+                    public class Cat {
+                        private String name;
+
+                        public Cat(String nameArg) {
+                            this.name = nameArg
+                        }
+                    }
+                    ```
+                    ---
+
+                    Scala позволяет пойти дальше, и объявить класс еще проще
+
+                    ```scala [1]
+                    class Cat(private var name: String)
+                    ```
+
+                    - **`name`** переменная класса **`Cat`**
+                    - **`name`** также аргумент конструктора **`Cat`**
+
+                    ---
+
+                    - Объекты создаются также, как в Java, через ключевое слово **`new`**
+
+                    ```scala [1-15]
+                    val cat: Cat = new Cat("Barsik")
+                    // `cat` объект теперь будет содержать значение "Barsik" в переменной `name`
+                    ```
+
+                    ---
+
+                    - Классы могут содержать _значения_
+                    - Потому что им нельзя присвоить новое значение, само значение можно сделать публичным,
+                    просто убрав __`private`__ ключевое слово
+
+                    ```scala [1]
+                    class Dog(val name: String)
+                    ```
+
+                    ---
+
+                    - Область в фигурных скобках - это область конструктора
+                    - Здесь мы можем сразу производить промежуточные вычисления
+
+                    ```scala [1-16]
+                    class MyDog(nameArg: String) {
+                      val name: String = "My " + nameArg
+                    }
+
+                    val dogName = new MyDog("Pluto").name
+                    // dogName = "My Pluto"
+                    ```
+                    ---
+
+                    - Scala классы не имеют статическую область, как Java классы
+                    - Взамен, Scala предоставляет специальную конструкцию `object`
+
+                    ```scala [1-3]
+                    object Math {
+                      def sum(a: Int, b: Int): Int = a + b
+                    }
+                    ```
+                    ---
+
+                    - `object` мы можем рассмотреть, как класс с одним только объектом, который уже определен и
+                    инициализирован
+                    - (На самом деле это ровно так и реализовано на уровне JVM)
+                    - Поведение схоже с паттерном _singleton_ из Java
+                    - Объекты неявно инициализируются во время старта программы
+
+                    ---
+
+                    ```scala [1-15]
+                    object One {
+                      val value: Int = 1
+                    }
+
+                    object Two {
+                      // Прямой доступ до значения через `One` объект
+                      val value: Int = One.value + 1
+                    }
+                    ```
+
+                    ---
+                    - Объекты имеют свой собственный тип, и могут быть использованы как обычные объекты, созданные
+                    через `new`
+                    - Доступ до типа получается через специальный синтаксис `type`
+
+                    ```scala [1-15]
+                    object One {
+                      val value: Int = 1
+                    }
+
+                    val one: One.type = One
+                    val two = one.value + 1
+
+                    ```
+
+                    ---
+
+                    - Объекты могут иметь точно такое же имя, что и класс. Если объект и класс расположены в одном файле,
+                    то такой объект называется __объектом компаньоном__
+                    - Такой объект можно рассматривать, как статическую область класса
+
+                    ```scala [1-8|1,6|7|2-3|1-15]
+                    class Circle(val radius: Double) {
+                      val area: Double =
+                        Circle.PI * radius * radius // Есть доступ до PI
+                    }
+
+                    object Circle {
+                      private val PI: Double = 3.14
+                    }
+                    ```
+                </textarea>
+            </section>
+        </section>
+
+        <section>
+            <section data-markdown>
+				<textarea data-template>
+                    ### Функции и Методы
+
+                    Функции и методы в Scala играют важную роль
+
+                    ---
+                    - Методы объявляются через ключевое слово __`def`__
+                    - Методы могут состоять из нескольких выражений. Последнее выражение должно иметь такой же тип,
+                    что и тип возвращаемого значения из метода
+                    ---
+
+                    ```scala [1-15]
+                    object Sounds
+                      def meow(): Unit = {
+                        val wow: String = "wow!" // Утверждение
+                        println("meow!")         // Утверждение, поэтому возвращаемый тип метода должен быть Unit
+                      }
+
+                      def bark(): String = {
+                        println("bark!") // Утверждение
+                        "bark!"          // Выражение типа String
+                      }
+                    }
+                    ```
+                    ---
+                    - Для методов с одним выражением можно опустить фигурные скобки (`{`, `}`)
+
+                    ```scala [1-2]
+                    def meow(): Unit =
+                      println("meow!")
+                    ```
+                    ---
+
+                    - Результирующий тип можно не указывать
+                    - Он может быть автоматически выведен
+
+                    ```scala [1]
+                    def meow() = println("meow!")
+                    ```
+                    ---
+
+                    - Методы можно конвертировать в функции с помощью специального синтаксиса **`_`** (подчеркивание)
+                    - Функции является объектами со специальными типом функции
+
+                    ```scala [1-15]
+                    def square(x: Int): Int = x * x
+
+                    // `square _` references function as a value
+                    val squareFunction: Int => Int = square _
+
+                    val res1 = square(2)         // 4
+                    val res2 = squareFunction(2) // 4
+                    ```
+                    ---
+
+                    - Функции имеют свой собственный конструктор типов __`=>`__
+                    - Левая часть соответствует типам аргументов функции
+                    - Правая часть соответствует типу возвращаемого значения функции
+
+                    ```scala [1-4]
+                    def sum(a: Int, b: Int, c: Int): Int =
+                      a + b + c
+
+                    val sumF: (Int, Int, Int) => Int = sum _
+                    ```
+
+                    ---
+
+                    - Функции можно передавать, как аргументы другим функциям / методам
+                    - Ничем не отличается от передачи объекта
+                    - Такие функции называются __функциями высшего порядка__
+
+                    ```scala [1-8|1|4-5|7-8]
+                    def calculate(a: Int, b: Int, op: (Int, Int) => Int): Int =
+                      op(a, b)
+
+                    def sum(a: Int, b: Int): Int = a + b
+                    def multiply(a: Int, b: Int): Int = a * b
+
+                    val resultOne = calculate(1, 2, sum)      // 1 + 2 = 3
+                    val resultTwo = calculate(1, 2, multiply) // 1 * 2 = 2
+                    ```
+
+                    ---
+                    - Функции могут не иметь имени. Такие функции называются __анонимными__
+
+                    ```scala [1-5|4-5]
+                    def calculate(a: Int, b: Int, op: (Int, Int) => Int): Int =
+                      op(a, b)
+
+                    val resultOne = calculate(1, 2, (a, b) => a + b) // 1 + 2 = 3
+                    val resultTwo = calculate(1, 2, (a, b) => a * b) // 1 * 2 = 2
+                    ```
+
+                    ---
+
+                    - Такой синтаксис мы можем еще упростить
+                    - Если аргумент функции, используется в теле функции один раз,
+                    то можно использовать синтаксис __`_`__ (подчеркивание) (это другое
+                    синтаксическое подчеркивание)
+
+                    ```scala [1-15]
+                    def calculate(a: Int, b: Int, op: (Int, Int) => Int): Int =
+                      op(a, b)
+
+                    val resultOne = calculate(1, 2, _ + _) // 1 + 2 = 3
+                    val resultTwo = calculate(1, 2, _ * _) // 1 * 2 = 2
+                    ```
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Структуры управления
+                    ---
+
+                    ### `if`
+
+                    Самая простая структура для ветвления
+
+                    ```scala [1-15]
+                    // ??? специальная функция, которую можно использовать, как
+                    // промежуточное значение
+                    var condition: Boolean = ???
+
+                    if (condition) {
+                      println("Condition is true")
+                      condition = false
+                    } else {
+                      println("Condition if false")
+                      condition = true
+                    }
+                    ```
+
+                    ---
+
+                    - Фигурные скобки `{}` можно не использовать, если в ветках используются однострочные выражения
+
+                    ```scala [1-15]
+                    if (condition)
+                      println("Condition is true")
+                    else {
+                      println("Condition if false")
+                      condition = true
+                    }
+                    ```
+
+                    ---
+                    - `if` также формирует выражение. У него тоже есть тип возвращаемого значения,
+                    которому должны соответствовать выражения в ветках
+
+                    ```scala [1-15]
+                    val condition: Boolean = ???
+
+                    // `if` можно писать в одну строчку
+                    // Аналог синтаксиса `?` `:` из Java
+                    val result = if (condition) "yes" else "no"
+                    println(result)
+                    ```
+
+                    ---
+
+                    **`else if`** синтаксис также поддерживается в Scala
+
+                    ```scala [1-15]
+                    val conditionOne: Boolean = ???
+                    val conditionTwo: Boolean = ???
+
+                    val result =
+                      if (conditionOne)
+                        "case 1"
+                      else if (conditionTwo)
+                        "case 2"
+                      else
+                        "case 3"
+                    ```
+
+                    ---
+
+                    ### `while`
+
+                    Базовая структура управления для циклов
+
+                    ```scala[1-15]
+                    var index: Int = 0
+
+                    while (index < 5) {
+                      println(index)
+                      index += 1
+                    }
+                    ```
+                    ---
+
+                    ### `for`
+
+                    Базовая структура управления для циклов с индексом
+
+                    ```scala [1-15]
+                    for (idx <- 1 to 5) {
+                      println(idx)
+                    }
+                    ```
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Интерполяция строк
+
+                    Инструмент для форматирования строк
+
+                    ---
+
+                    - Любой объект в Scala имеет метод **`toString`**
+                    - Наследие из Java
+
+                    ```scala [1-15]
+                    class Cat(val name: String) {
+                      override def toString(): String = name
+                    }
+
+                    val cat = new Cat("Barsik")
+                    val catName = cat.toString()
+
+                    ```
+
+                    ---
+
+                    - Форматирование строк через нативные конструкции может быть громоздким
+
+                    ```scala [1-15]
+                    class Person(val name: String, val surname: String)
+
+                    val person = new Person("Petya", "Petrov")
+                    val fullName = person.name + " " + person.surname
+                    // fullName = "Petya Petrov"
+                    ```
+
+                    ---
+
+                    Scala имеет специальный инструмент - интерполяцию строк
+
+
+                    ```scala [1-15]
+                    val person = new Person("Petya", "Petrov")
+                    // переменные могут быть использованы напрямую в строке
+                    val fullName = s"{$person.name} ${person.surname}"
+                    // fullName = "Petya Petrov"
+                    ```
+
+                    ---
+
+                    - Каждая упоминаемая переменная в интерполированной строке будет конвертирована в строку через
+                    метод **`toString`**
+
+                    ```scala [1-15]
+                    class Cat(val name: String) {
+                      override def toString(): String = name
+                    }
+
+                    val cat = new Cat("Barsik")
+                    val catGreeting = s"Hello, my name is $cat"
+                    // catGreeting = "Hello, my name is Barsik"
+                    ```
+
+                </textarea>
+            </section>
+        </section>
+        <section>
+            <section data-markdown>
+                <textarea data-template>
+                    ### Начало программы
+
+                    Наша программа для старта должна иметь точку входа
+
+                    Это специальный метод, с которой начинается выполнение программы
+
+                    ---
+
+                    Метод точки входа в Java
+
+                    ```java [1-15]
+                    public class Main {
+                      public static void main(String[] args) {
+                        System.out.println("Hello world!");
+                      }
+                    }
+                    ```
+
+                    ---
+
+                    Метод точки входа в Scala
+
+                    ```scala [1-15]
+                    object Main {
+                      def main(args: Array[String]): Unit = {
+                        println("Hello world!")
+                      }
+                    }
+                    ```
+                    ---
+
+                    Каждая функция с такой сигнатурой и названием может быть использована,
+                    как отдельная точка входа в программу:
+
+                    ```scala [1-15]
+                    object MainOne {
+                      def main(args: Array[String]): Unit = {
+                        println("Hello world!")
+                      }
+                    }
+
+                    object MainTwo {
+                      def main(args: Array[String]): Unit = {
+                        println("Hello world!")
+                      }
+                    }
+                    ```
+
+                </textarea>
+            </section>
+        </section>
+    </div>
+</div>
+
+
+</body>
+</html>
